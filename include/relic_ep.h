@@ -119,6 +119,8 @@ enum {
 	B12_P638,
 	/** 1536-bit supersingular curve. */
 	SS_P1536,
+	/** 310-bit Brezing-Weng curve with embedding degree 13. */
+	BW13_P310,
 };
 
 /**
@@ -143,6 +145,8 @@ enum {
 	EP_B48,
 	/** Kachisa-Scott-Schaefer curve with embedding degree 54. */
 	EP_K54,
+	/** Brezing-Weng curve with embedding degree 13. */
+	EP_BW13,
 };
 
 /*============================================================================*/

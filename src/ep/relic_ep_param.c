@@ -563,6 +563,22 @@
 /** @} */
 #endif
 
+#if defined(EP_ENDOM) && FP_PRIME == 310
+/**
+ * Parameters for the 310-bit pairing-friendly Brezing-Weng curve.
+ */
+/** @{ */
+#define BW13_P310_A		"0"
+#define BW13_P310_B		"35AB7292654E9F30C2D95B3183A1C1DC71CEFCABD54C6076C31BF505591835D89000000019227A"
+#define BW13_P310_X		"24E5EBA339505835095DEB8E6CDF44F4A3F75E664E93F3B06E89259962EF3B908E7AAF56025E91"
+#define BW13_P310_Y		"E8E878CDD4385AC0FB4B1EEA77706253C029ADC1782B5B27C4F27C8C55EA00DE0740858E37924"
+#define BW13_P310_R		"73ACDFCE88E6B386419A63DDDA057ED01B7E253E37867EED259476162F7697A2751"
+#define BW13_P310_H		"76C6A789ECB"
+#define BW13_P310_BETA	"35AB7070426F80EE3BE37481D262A52C602EC3C3358CB273C8EE07296A31B4B7FB76648F3A62DB"
+#define BW13_P310_LAMB	"175D42CD9CC96D446563A6BB0000000000000"
+/** @} */
+#endif
+
 /**
  * Assigns a set of ordinary elliptic curve parameters.
  *
@@ -731,6 +747,13 @@ void ep_param_set(int param) {
 			case CURVE_67254:
 				ASSIGN(CURVE_67254, PRIME_382105);
 				plain = 1;
+				break;
+#endif
+#if defined(EP_ENDOM) & FP_PRIME == 310
+			case BW13_P310:
+				ASSIGNK(BW13_P310, BW13_310);
+				endom = 1;
+				pairf = EP_BW13;
 				break;
 #endif
 #if defined(EP_ENDOM) & FP_PRIME == 381
@@ -1029,6 +1052,9 @@ int ep_param_set_any_pairf(void) {
 	ep_param_set(BN_P256);
 	type = EP_DTYPE;
 	degree = 2;
+#elif FP_PRIME == 310
+	ep_param_set(BW13_P310);
+	degree = 0;
 #elif FP_PRIME == 381
 	ep_param_set(B12_P381);
 	type = EP_MTYPE;
@@ -1210,6 +1236,9 @@ void ep_param_print(void) {
 		case CURVE_511187:
 			util_banner("Curve Curve511187:", 0);
 			break;
+		case BW13_P310:
+			util_banner("Curve BW13-P310:", 0);
+			break;
 	}
 }
 
@@ -1239,6 +1268,7 @@ int ep_param_level(void) {
 		case B12_P446:
 		case CP8_544:
 		case SS_P1536:
+		case BW13_310:
 			return 128;
 		case B12_P455:
 			return 140;
@@ -1271,6 +1301,8 @@ int ep_param_embed(void) {
 		case OT8_P511:
 		case CP8_P544:
 			return 8;
+		case BW13_310:
+			return 13;
 		case B48_P575:
 			return 48;
 		case K54_P569:

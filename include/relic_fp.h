@@ -134,6 +134,8 @@ enum {
 	B12_638,
 	/** 1536-bit prime for supersingular curve with embedding degree k = 2. */
 	SS_1536,
+	/** 310-bit prime provided by Guillevic for Brezing-Weng curve with embedding degree k = 13. */
+	BW13_310,
 };
 
 /**
