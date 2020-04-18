@@ -121,6 +121,8 @@ enum {
 	SS_P1536,
 	/** 310-bit Brezing-Weng curve with embedding degree 13. */
 	BW13_P310,
+	/** 286-bit Brezing-Weng curve with embedding degree 19. */
+	BW19_P286,
 };
 
 /**
@@ -147,6 +149,8 @@ enum {
 	EP_K54,
 	/** Brezing-Weng curve with embedding degree 13. */
 	EP_BW13,
+	/** Brezing-Weng curve with embedding degree 19. */
+	EP_BW19,
 };
 
 /*============================================================================*/

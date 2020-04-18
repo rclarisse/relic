@@ -165,6 +165,25 @@ typedef dv6_t dv12_t[2];
 typedef fp6_t fp12_t[2];
 
 /**
+ * Represents a triskaidecic extension prime field element.
+ *
+ * This extension is constructed with the basis {1, j}, where j is an adjoined
+ * 13th root in the prime field.
+ */
+typedef fp_t fp13_t[13];
+
+/**
+ * Represents a double-precision triskaidecic extension field element.
+ */
+typedef dv_t dv13_t[13];
+
+/**
+ * Represents a triskaidecic extension field element with automatic memory
+ * allocation.
+ */
+typedef fp_st fp13_st[13];
+
+/**
  * Represents a double-precision octdecic extension field element.
  */
 typedef dv9_t dv18_t[2];

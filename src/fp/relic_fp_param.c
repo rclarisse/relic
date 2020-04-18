@@ -460,13 +460,21 @@ void fp_param_set(int param) {
 				break;
 #elif FP_PRIME == 310
 			case BW13_310:
-				/** x = 2^11 + 2^8 - 2^6 - 2^4. */
+				/* x = 2^11 + 2^8 - 2^6 - 2^4. */
 				bn_set_2b(t0, 11);
 				bn_set_bit(t0, 8, 1);
 				bn_set_2b(t1, 6);
 				bn_set_bit(t1, 4, 1);
 				bn_sub(t0, t0, t1);
 				fp_prime_set_pairf(t0, EP_BW13);
+				break;
+#elif FP_PRIME == 286
+			case BW19_286:
+				/* x = 2^7 + 2^4 + 1. */
+				bn_set_2b(t0, 7);
+				bn_set_bit(t0, 4, 1);
+				bn_add_dig(t0, t0, 1);
+				fp_prime_set_pairf(t0, EP_BW19);
 				break;
 #else
 			default:
@@ -552,6 +560,8 @@ int fp_param_set_any(void) {
 	fp_param_set(SS_1536);
 #elif FP_PRIME == 310
 	fp_param_set(BW13_310);
+#elif FP_PRIME == 286
+	fp_param_set(BW19_286);
 #else
 	return fp_param_set_any_dense();
 #endif

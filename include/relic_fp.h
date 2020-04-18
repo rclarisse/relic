@@ -136,6 +136,8 @@ enum {
 	SS_1536,
 	/** 310-bit prime provided by Guillevic for Brezing-Weng curve with embedding degree k = 13. */
 	BW13_310,
+	/** 286-bit prime for Brezing-Weng curve with embedding degree k = 19. */
+	BW19_286,
 };
 
 /**

@@ -380,6 +380,26 @@ void fp_prime_set_pairf(const bn_t x, int pairf) {
 				bn_div_dig(p, p, 3);
 				fp_prime_set_dense(p);
 				break;
+			case EP_BW19:
+				/* p = (x^40 + x^39 + x^38 + x^21 - 2*x^20 + x^19 + x^2 - 2*x + 1) / 3. */
+				/* p = (x^38 * (x^2 + x + 1) + x^19 * (x - 1)^2 + (x - 1)^2) / 3. */
+				bn_sqr(p, t0); 							// p  = x^2
+				bn_sqr(t1, p); 							// t1 = x^4
+				bn_sqr(t1, t1);							// t1 = x^8
+				bn_sqr(t1, t1);							// t1 = x^16
+				bn_mul(t1, t1, p);					// t1 = x^18
+				bn_mul(t1, t1, t0);					// t1 = x^19
+				bn_add(p, p, t0);						// p  = x^2 + x
+				bn_add_dig(p, p, 1);				// p  = x^2 + x + 1
+				bn_mul(p, p, t1);						// p  = x^19 * (x^2 + x + 1)
+				bn_sub_dig(t0, t0, 1);			// t0 = x - 1
+				bn_sqr(t0, t0);							// t0 = (x - 1)^2
+				bn_add(p, p, t0);						// p  = x^19 * (x^2 + x + 1) + (x - 1)^2
+				bn_mul(p, p, t1);						// p  = x^38 * (x^2 + x + 1) + x^19 * (x - 1)^2
+				bn_add(p, p, t0);						// p  = x^38 * (x^2 + x + 1) + x^19 * (x - 1)^2 + (x - 1)^2
+				bn_div_dig(p, p, 3);
+				fp_prime_set_dense(p);
+				break;
 		}
 
 		/* Store parameter in NAF form. */
