@@ -121,6 +121,13 @@ static void fp_prime_set(const bn_t p) {
 		}
 #endif
 
+		ctx->ad2 = 0;
+		bn_sub_dig(t, p, 1);
+		while (bn_is_even(t)) {
+			ctx->ad2++;
+			bn_hlv(t, t);
+		}
+
 		fp_prime_calc();
 	}
 	CATCH_ANY {
@@ -229,6 +236,10 @@ int fp_prime_get_qnr(void) {
 
 int fp_prime_get_cnr(void) {
 	return core_get()->cnr;
+}
+
+int fp_prime_get_2ad(void) {
+	return core_get()->ad2;
 }
 
 void fp_prime_set_dense(const bn_t p) {
@@ -494,12 +505,6 @@ void fp_prime_calc(void) {
 			fp_srt(core_get()->srm1, t);
 		#endif
 
-		#ifdef WITH_EP
-			fp_set_dig(t, 3);
-			fp_neg(t, t);
-			fp_srt(core_get()->srm3, t);
-		#endif
-
 		#ifdef WITH_FPX
 			if (fp_prime_get_qnr() != 0) {
 				fp2_field_init();
@@ -524,18 +529,12 @@ void fp_prime_conv(fp_t c, const bn_t a) {
 	TRY {
 		bn_new(t);
 
-#if FP_RDC == MONTY
 		bn_mod(t, a, &(core_get()->prime));
+#if FP_RDC == MONTY
 		bn_lsh(t, t, RLC_FP_DIGS * RLC_DIG);
 		bn_mod(t, t, &(core_get()->prime));
 		dv_copy(c, t->dp, RLC_FP_DIGS);
 #else
-		if (a->used > RLC_FP_DIGS) {
-			THROW(ERR_NO_PRECI);
-		}
-
-		bn_mod(t, a, &(core_get()->prime));
-
 		if (bn_is_zero(t)) {
 			fp_zero(c);
 		} else {

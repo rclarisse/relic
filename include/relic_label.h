@@ -45,9 +45,9 @@
 #ifdef LABEL
 
 #undef first_ctx
-#define first_ctx	PREFIX(first_ctx)
+#define first_ctx     PREFIX(first_ctx)
 #undef core_ctx
-#define core_ctx	PREFIX(core_ctx)
+#define core_ctx      PREFIX(core_ctx)
 
 #undef core_init
 #undef core_clean
@@ -132,10 +132,10 @@
 #define util_print_dig 	PREFIX(util_print_dig)
 
 #undef conf_print
-#define conf_print       PREFIX(conf_print)
+#define conf_print    PREFIX(conf_print)
 
 #undef dv_t
-#define dv_t	PREFIX(dv_t)
+#define dv_t          PREFIX(dv_t)
 
 #undef dv_print
 #undef dv_zero
@@ -161,8 +161,8 @@
 
 #undef bn_st
 #undef bn_t
-#define bn_st	PREFIX(bn_st)
-#define bn_t	PREFIX(bn_t)
+#define bn_st     	PREFIX(bn_st)
+#define bn_t      	PREFIX(bn_t)
 
 #undef bn_init
 #undef bn_clean
@@ -414,8 +414,8 @@
 
 #undef fp_st
 #undef fp_t
-#define fp_st	PREFIX(fp_st)
-#define fp_t	PREFIX(fp_t)
+#define fp_st	        PREFIX(fp_st)
+#define fp_t          PREFIX(fp_t)
 
 #undef fp_prime_init
 #undef fp_prime_clean
@@ -426,6 +426,7 @@
 #undef fp_prime_get_sps
 #undef fp_prime_get_qnr
 #undef fp_prime_get_cnr
+#undef fp_prime_get_2ad
 #undef fp_param_get
 #undef fp_prime_set_dense
 #undef fp_prime_set_pmers
@@ -508,6 +509,7 @@
 #define fp_prime_get_sps 	PREFIX(fp_prime_get_sps)
 #define fp_prime_get_qnr 	PREFIX(fp_prime_get_qnr)
 #define fp_prime_get_cnr 	PREFIX(fp_prime_get_cnr)
+#define fp_prime_get_2ad 	PREFIX(fp_prime_get_2ad)
 #define fp_param_get 	PREFIX(fp_param_get)
 #define fp_prime_set_dense 	PREFIX(fp_prime_set_dense)
 #define fp_prime_set_pmers 	PREFIX(fp_prime_set_pmers)
@@ -610,7 +612,7 @@
 #undef fp_sqrm_low
 #undef fp_rdcs_low
 #undef fp_rdcn_low
-#undef fp_invn_low
+#undef fp_invm_low
 
 #define fp_add1_low 	PREFIX(fp_add1_low)
 #define fp_addn_low 	PREFIX(fp_addn_low)
@@ -641,12 +643,12 @@
 #define fp_sqrm_low 	PREFIX(fp_sqrm_low)
 #define fp_rdcs_low 	PREFIX(fp_rdcs_low)
 #define fp_rdcn_low 	PREFIX(fp_rdcn_low)
-#define fp_invn_low 	PREFIX(fp_invn_low)
+#define fp_invm_low 	PREFIX(fp_invm_low)
 
 #undef fp_st
 #undef fp_t
-#define fp_st	PREFIX(fp_st)
-#define fp_t	PREFIX(fp_t)
+#define fp_st	        PREFIX(fp_st)
+#define fp_t          PREFIX(fp_t)
 
 #undef fb_poly_init
 #undef fb_poly_clean
@@ -842,8 +844,8 @@
 
 #undef ep_st
 #undef ep_t
-#define ep_st	PREFIX(ep_st)
-#define ep_t	PREFIX(ep_t)
+#define ep_st         PREFIX(ep_st)
+#define ep_t          PREFIX(ep_t)
 
 #undef ep_curve_init
 #undef ep_curve_clean
@@ -857,10 +859,12 @@
 #undef ep_curve_is_endom
 #undef ep_curve_is_super
 #undef ep_curve_is_pairf
+#undef ep_curve_is_ctmap
 #undef ep_curve_get_gen
 #undef ep_curve_get_tab
 #undef ep_curve_get_ord
 #undef ep_curve_get_cof
+#undef ep_curve_get_iso
 #undef ep_curve_set_plain
 #undef ep_curve_set_super
 #undef ep_curve_set_endom
@@ -924,6 +928,7 @@
 #undef ep_norm
 #undef ep_norm_sim
 #undef ep_map
+#undef ep_map_dst
 #undef ep_pck
 #undef ep_upk
 
@@ -939,10 +944,12 @@
 #define ep_curve_is_endom 	PREFIX(ep_curve_is_endom)
 #define ep_curve_is_super 	PREFIX(ep_curve_is_super)
 #define ep_curve_is_pairf 	PREFIX(ep_curve_is_pairf)
+#define ep_curve_is_ctmap 	PREFIX(ep_curve_is_ctmap)
 #define ep_curve_get_gen 	PREFIX(ep_curve_get_gen)
 #define ep_curve_get_tab 	PREFIX(ep_curve_get_tab)
 #define ep_curve_get_ord 	PREFIX(ep_curve_get_ord)
 #define ep_curve_get_cof 	PREFIX(ep_curve_get_cof)
+#define ep_curve_get_iso 	PREFIX(ep_curve_get_iso)
 #define ep_curve_set_plain 	PREFIX(ep_curve_set_plain)
 #define ep_curve_set_super 	PREFIX(ep_curve_set_super)
 #define ep_curve_set_endom 	PREFIX(ep_curve_set_endom)
@@ -1006,13 +1013,14 @@
 #define ep_norm 	PREFIX(ep_norm)
 #define ep_norm_sim 	PREFIX(ep_norm_sim)
 #define ep_map 	PREFIX(ep_map)
+#define ep_map_dst 	PREFIX(ep_map_dst)
 #define ep_pck 	PREFIX(ep_pck)
 #define ep_upk 	PREFIX(ep_upk)
 
 #undef ed_st
 #undef ed_t
-#define ed_st	PREFIX(ed_st)
-#define ed_t	PREFIX(ed_t)
+#define ed_st         PREFIX(ed_st)
+#define ed_t          PREFIX(ed_t)
 
 #undef ed_param_set
 #undef ed_param_set_any
@@ -1148,8 +1156,8 @@
 
 #undef eb_st
 #undef eb_t
-#define eb_st	PREFIX(eb_st)
-#define eb_t	PREFIX(eb_t)
+#define eb_st         PREFIX(eb_st)
+#define eb_t          PREFIX(eb_t)
 
 #undef eb_curve_init
 #undef eb_curve_clean
@@ -1297,8 +1305,8 @@
 
 #undef ep2_st
 #undef ep2_t
-#define ep2_st	PREFIX(ep2_st)
-#define ep2_t	PREFIX(ep2_t)
+#define ep2_st        PREFIX(ep2_st)
+#define ep2_t         PREFIX(ep2_t)
 
 #undef ep2_curve_init
 #undef ep2_curve_clean
@@ -1306,11 +1314,14 @@
 #undef ep2_curve_get_b
 #undef ep2_curve_get_vs
 #undef ep2_curve_opt_a
+#undef ep2_curve_opt_b
 #undef ep2_curve_is_twist
+#undef ep2_curve_is_ctmap
 #undef ep2_curve_get_gen
 #undef ep2_curve_get_tab
 #undef ep2_curve_get_ord
 #undef ep2_curve_get_cof
+#undef ep2_curve_get_iso
 #undef ep2_curve_set
 #undef ep2_curve_set_twist
 #undef ep2_is_infty
@@ -1373,11 +1384,14 @@
 #define ep2_curve_get_b 	PREFIX(ep2_curve_get_b)
 #define ep2_curve_get_vs 	PREFIX(ep2_curve_get_vs)
 #define ep2_curve_opt_a 	PREFIX(ep2_curve_opt_a)
+#define ep2_curve_opt_b 	PREFIX(ep2_curve_opt_b)
 #define ep2_curve_is_twist 	PREFIX(ep2_curve_is_twist)
+#define ep2_curve_is_ctmap	PREFIX(ep2_curve_is_ctmap)
 #define ep2_curve_get_gen 	PREFIX(ep2_curve_get_gen)
 #define ep2_curve_get_tab 	PREFIX(ep2_curve_get_tab)
 #define ep2_curve_get_ord 	PREFIX(ep2_curve_get_ord)
 #define ep2_curve_get_cof 	PREFIX(ep2_curve_get_cof)
+#define ep2_curve_get_iso	PREFIX(ep2_curve_get_iso)
 #define ep2_curve_set 	PREFIX(ep2_curve_set)
 #define ep2_curve_set_twist 	PREFIX(ep2_curve_set_twist)
 #define ep2_is_infty 	PREFIX(ep2_is_infty)
@@ -1437,14 +1451,63 @@
 #undef fp2_st
 #undef fp2_t
 #undef dv2_t
+#define fp2_st        PREFIX(fp2_st)
+#define fp2_t         PREFIX(fp2_t)
+#define dv2_t         PREFIX(dv2_t)
 #undef fp3_st
 #undef fp3_t
 #undef dv3_t
+#define fp3_st        PREFIX(fp3_st)
+#define fp3_t         PREFIX(fp3_t)
+#define dv3_t         PREFIX(dv3_t)
 #undef fp6_st
 #undef fp6_t
 #undef dv6_t
+#define fp6_st        PREFIX(fp6_st)
+#define fp6_t         PREFIX(fp6_t)
+#define dv6_t         PREFIX(dv6_t)
+#undef fp9_st
+#undef fp8_t
+#undef dv8_t
+#define fp8_st        PREFIX(fp8_st)
+#define fp8_t         PREFIX(fp8_t)
+#define dv8_t         PREFIX(dv8_t)
+#undef fp9_st
+#undef fp9_t
+#undef dv9_t
+#define fp9_st        PREFIX(fp9_st)
+#define fp9_t         PREFIX(fp9_t)
+#define dv9_t         PREFIX(dv9_t)
+#undef fp12_st
 #undef fp12_t
+#undef dv12_t
+#define fp12_st        PREFIX(fp12_st)
+#define fp12_t         PREFIX(fp12_t)
+#define dv12_t         PREFIX(dv12_t)
+#undef fp18_st
 #undef fp18_t
+#undef dv18_t
+#define fp18_st        PREFIX(fp18_st)
+#define fp18_t         PREFIX(fp18_t)
+#define dv18_t         PREFIX(dv18_t)
+#undef fp24_st
+#undef fp24_t
+#undef dv24_t
+#define fp24_st        PREFIX(fp24_st)
+#define fp24_t         PREFIX(fp24_t)
+#define dv24_t         PREFIX(dv24_t)
+#undef fp48_st
+#undef fp48_t
+#undef dv48_t
+#define fp48_st        PREFIX(fp48_st)
+#define fp48_t         PREFIX(fp48_t)
+#define dv48_t         PREFIX(dv48_t)
+#undef fp54_st
+#undef fp54_t
+#undef dv54_t
+#define fp54_st        PREFIX(fp54_st)
+#define fp54_t         PREFIX(fp54_t)
+#define dv54_t         PREFIX(dv54_t)
 
 #undef fp2_field_init
 #undef fp2_field_get_qnr
@@ -1461,8 +1524,10 @@
 #undef fp2_set_dig
 #undef fp2_add_basic
 #undef fp2_add_integ
+#undef fp2_add_dig
 #undef fp2_sub_basic
 #undef fp2_sub_integ
+#undef fpt_sub_dig
 #undef fp2_neg
 #undef fp2_dbl_basic
 #undef fp2_dbl_integ
@@ -1472,6 +1537,7 @@
 #undef fp2_mul_nor_basic
 #undef fp2_mul_nor_integ
 #undef fp2_mul_frb
+#undef fp2_mul_dig
 #undef fp2_sqr_basic
 #undef fp2_sqr_integ
 #undef fp2_inv
@@ -1502,8 +1568,10 @@
 #define fp2_set_dig 	PREFIX(fp2_set_dig)
 #define fp2_add_basic 	PREFIX(fp2_add_basic)
 #define fp2_add_integ 	PREFIX(fp2_add_integ)
+#define fp2_add_dig		PREFIX(fp2_add_dig)
 #define fp2_sub_basic 	PREFIX(fp2_sub_basic)
 #define fp2_sub_integ 	PREFIX(fp2_sub_integ)
+#define fp2_sub_dig		PREFIX(fp2_sub_dig)
 #define fp2_neg 	PREFIX(fp2_neg)
 #define fp2_dbl_basic 	PREFIX(fp2_dbl_basic)
 #define fp2_dbl_integ 	PREFIX(fp2_dbl_integ)
@@ -1513,6 +1581,7 @@
 #define fp2_mul_nor_basic 	PREFIX(fp2_mul_nor_basic)
 #define fp2_mul_nor_integ 	PREFIX(fp2_mul_nor_integ)
 #define fp2_mul_frb 	PREFIX(fp2_mul_frb)
+#define fp2_mul_dig		PREFIX(fp2_mul_dig)
 #define fp2_sqr_basic 	PREFIX(fp2_sqr_basic)
 #define fp2_sqr_integ 	PREFIX(fp2_sqr_integ)
 #define fp2_inv 	PREFIX(fp2_inv)
@@ -2564,6 +2633,34 @@
 #define cp_mklhs_ver 	PREFIX(cp_mklhs_ver)
 #define cp_mklhs_off 	PREFIX(cp_mklhs_off)
 #define cp_mklhs_onv 	PREFIX(cp_mklhs_onv)
+
+#undef md_map_sh224
+#undef md_map_sh256
+#undef md_map_sh384
+#undef md_map_sh512
+#undef md_map_b2s160
+#undef md_map_b2s256
+#undef md_kdf
+#undef md_mgf
+#undef md_hmac
+#undef md_xmd_sh224
+#undef md_xmd_sh256
+#undef md_xmd_sh384
+#undef md_xmd_sh512
+
+#define md_map_sh224 	PREFIX(md_map_sh224)
+#define md_map_sh256 	PREFIX(md_map_sh256)
+#define md_map_sh384 	PREFIX(md_map_sh384)
+#define md_map_sh512 	PREFIX(md_map_sh512)
+#define md_map_b2s160 	PREFIX(md_map_b2s160)
+#define md_map_b2s256 	PREFIX(md_map_b2s256)
+#define md_kdf 	PREFIX(md_kdf)
+#define md_mgf 	PREFIX(md_mgf)
+#define md_hmac 	PREFIX(md_hmac)
+#define md_xmd_sh224 	PREFIX(md_xmd_sh224)
+#define md_xmd_sh256 	PREFIX(md_xmd_sh256)
+#define md_xmd_sh384 	PREFIX(md_xmd_sh384)
+#define md_xmd_sh512 	PREFIX(md_xmd_sh512)
 
 #endif /* LABEL */
 

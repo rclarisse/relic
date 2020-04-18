@@ -24,47 +24,34 @@
 /**
  * @file
  *
- * Implementation of the low-level inversion functions.
+ * Implementation of the low-level prime field multiplication functions.
  *
- * @&version $Id$
- * @ingroup fp
+ * @ingroup bn
  */
 
 #include <gmp.h>
 
 #include "relic_fp.h"
 #include "relic_fp_low.h"
-#include "relic_core.h"
 
 /*============================================================================*/
 /* Public definitions                                                         */
 /*============================================================================*/
 
-void fp_invm_low(dig_t *c, const dig_t *a) {
-	mp_size_t cn;
-	rlc_align dig_t s[RLC_FP_DIGS], t[2 * RLC_FP_DIGS], u[RLC_FP_DIGS + 1];
+dig_t fp_mula_low(dig_t *c, const dig_t *a, dig_t digit) {
+	return mpn_addmul_1(c, a, RLC_FP_DIGS, digit);
+}
 
-#if FP_RDC == MONTY
-	dv_zero(t + RLC_FP_DIGS, RLC_FP_DIGS);
-	dv_copy(t, a, RLC_FP_DIGS);
-	fp_rdcn_low(u, t);
-#else
-	fp_copy(u, a);
-#endif
+dig_t fp_mul1_low(dig_t *c, const dig_t *a, dig_t digit) {
+	return mpn_mul_1(c, a, RLC_FP_DIGS, digit);
+}
 
-	dv_copy(s, fp_prime_get(), RLC_FP_DIGS);
+void fp_muln_low(dig_t *c, const dig_t *a, const dig_t *b) {
+	mpn_mul_n(c, a, b, RLC_FP_DIGS);
+}
 
-	mpn_gcdext(t, c, &cn, u, RLC_FP_DIGS, s, RLC_FP_DIGS);
-	if (cn < 0) {
-		dv_zero(c - cn, RLC_FP_DIGS + cn);
-		mpn_sub_n(c, fp_prime_get(), c, RLC_FP_DIGS);
-	} else {
-		dv_zero(c + cn, RLC_FP_DIGS - cn);
-	}
+#include "bls12_381_q_64.c"
 
-#if FP_RDC == MONTY
-	dv_zero(t, RLC_FP_DIGS);
-	dv_copy(t + RLC_FP_DIGS, c, RLC_FP_DIGS);
-	mpn_tdiv_qr(u, c, 0, t, 2 * RLC_FP_DIGS, fp_prime_get(), RLC_FP_DIGS);
-#endif
+void fp_mulm_low(dig_t *c, const dig_t *a, const dig_t *b) {
+	fiat_bls12_381_q_mul(c, a, b);
 }

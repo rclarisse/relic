@@ -10,7 +10,7 @@ set(PROJECT_VERSION_PATCH "0")
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 set(VERSION ${PROJECT_VERSION})
 
-set(INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include/low)
+set(INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/include/low ${CMAKE_CURRENT_SOURCE_DIR}/src/tmpl)
 include_directories(${INCLUDE})
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
@@ -35,7 +35,8 @@ message("   BIGED=[off|on] Build with big-endian support.")
 message("   SHLIB=[off|on] Build shared library.")
 message("   STLIB=[off|on] Build static library.")
 message("   STBIN=[off|on] Build static binaries.")
-message("   AMALG=[off|on] Build amalgamation for better performance.\n")
+message("   AMALG=[off|on] Build amalgamation for better performance.")
+message("   AUSAN=[off|on] Build with ASan and UBSan (gcc/clang only).\n")
 
 option(DEBUG "Build with debugging support" off)
 option(PROFL "Build with profiling support" off)
@@ -51,6 +52,7 @@ option(SHLIB "Build shared library" on)
 option(STLIB "Build static library" on)
 option(STBIN "Build static binaries" off)
 option(AMALG "Build amalgamation" off)
+option(AUSAN "Build with ASan and UBSan (gcc/clang only)" off)
 
 message(STATUS "Number of times each test or benchmark is ran (default = 50, 1000):\n")
 
@@ -232,6 +234,10 @@ else()
 	# If the user did not specify compile flags, we use sane defaults.
 	set(CFLAGS "${COMP}")
 	set(DFLAGS "")
+endif()
+
+if(AUSAN)
+	set(DFLAGS "${DFLAGS} -ggdb -fsanitize=address -fsanitize=undefined")
 endif()
 
 if(MULTI STREQUAL OPENMP)

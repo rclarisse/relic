@@ -209,6 +209,12 @@ enum {
 #define RLC_EP_TABLE_MAX 	RLC_MAX(RLC_EP_TABLE_BASIC, RLC_EP_TABLE_COMBD)
 #endif
 
+/**
+ * Maximum number of coefficients of an isogeny map polynomial.
+ * RLC_TERMS of value 16 is sufficient for a degree-11 isogeny polynomial.
+ */
+#define RLC_EP_CTMAP_MAX   16
+
 /*============================================================================*/
 /* Type definitions                                                           */
 /*============================================================================*/
@@ -227,6 +233,7 @@ typedef struct {
 	int norm;
 } ep_st;
 
+
 /**
  * Pointer to an elliptic curve point.
  */
@@ -235,6 +242,37 @@ typedef ep_st ep_t[1];
 #else
 typedef ep_st *ep_t;
 #endif
+
+/**
+ * Data structure representing an isogeny map.
+ */
+typedef struct {
+	/** The a-coefficient of the isogenous curve used for SSWU mapping. */
+	fp_st a;
+	/** The b-coefficient of the isogenous curve used for SSWU mapping. */
+	fp_st b;
+	/** Degree of x numerator */
+	int deg_xn;
+	/** Degree of x denominator */
+	int deg_xd;
+	/** Degree of y numerator */
+	int deg_yn;
+	/** Degree of y denominator */
+	int deg_yd;
+	/** x numerator coefficients */
+	fp_st xn[RLC_EP_CTMAP_MAX];
+	/** x denominator coefficients */
+	fp_st xd[RLC_EP_CTMAP_MAX];
+	/** y numerator coefficients */
+	fp_st yn[RLC_EP_CTMAP_MAX];
+	/** y denominator coefficients */
+	fp_st yd[RLC_EP_CTMAP_MAX];
+} iso_st;
+
+/**
+ * Pointer to isogeny map coefficients.
+ */
+typedef iso_st *iso_t;
 
 /*============================================================================*/
 /* Macro definitions                                                          */
@@ -497,6 +535,13 @@ int ep_curve_is_super(void);
 int ep_curve_is_pairf(void);
 
 /**
+ * Tests if the current curve should use an isogeny map for the SSWU map.
+ *
+ * @return 1 if the curve uses an isogeny, and 0 otherwise.
+ */
+int ep_curve_is_ctmap(void);
+
+/**
  * Returns the generator of the group of points in the prime elliptic curve.
  *
  * @param[out] g			- the returned generator.
@@ -525,6 +570,11 @@ void ep_curve_get_ord(bn_t n);
 void ep_curve_get_cof(bn_t h);
 
 /**
+ * Returns the isogeny map coefficients for use with the SSWU map.
+ */
+iso_t ep_curve_get_iso(void);
+
+/**
  * Configures a prime elliptic curve without endomorphisms by its coefficients
  * and generator.
  *
@@ -533,9 +583,11 @@ void ep_curve_get_cof(bn_t h);
  * @param[in] g			- the generator.
  * @param[in] r			- the order of the group of points.
  * @param[in] h			- the cofactor of the group order.
+ * @param[in] u			- the non-square used for hashing to this curve.
+ * @param[in] ctmap	- true if this curve will use an isogeny for mapping.
  */
 void ep_curve_set_plain(const fp_t a, const fp_t b, const ep_t g, const bn_t r,
-		const bn_t h);
+		const bn_t h, const fp_t u, int ctmap);
 
 /**
  * Configures a supersingular prime elliptic curve by its coefficients and
@@ -546,9 +598,11 @@ void ep_curve_set_plain(const fp_t a, const fp_t b, const ep_t g, const bn_t r,
  * @param[in] g			- the generator.
  * @param[in] r			- the order of the group of points.
  * @param[in] h			- the cofactor of the group order.
+ * @param[in] u			- the non-square used for hashing to this curve.
+ * @param[in] ctmap	- true if this curve will use an isogeny for mapping.
  */
 void ep_curve_set_super(const fp_t a, const fp_t b, const ep_t g, const bn_t r,
-		const bn_t h);
+		const bn_t h, const fp_t u, int ctmap);
 
 /**
  * Configures a prime elliptic curve with endomorphisms by its coefficients and
@@ -561,9 +615,11 @@ void ep_curve_set_super(const fp_t a, const fp_t b, const ep_t g, const bn_t r,
  * @param[in] beta		- the constant associated with the endomorphism.
  * @param[in] l			- the exponent corresponding to the endomorphism.
  * @param[in] h			- the cofactor of the group order.
+ * @param[in] u			- the non-square used for hashing to this curve.
+ * @param[in] ctmap	- true if this curve will use an isogeny for mapping.
  */
 void ep_curve_set_endom(const fp_t a, const fp_t b, const ep_t g, const bn_t r,
-		const bn_t h, const fp_t beta, const bn_t l);
+		const bn_t h, const fp_t beta, const bn_t l, const fp_t u, int ctmap);
 
 /**
  * Configures a prime elliptic curve by its parameter identifier.
@@ -1104,6 +1160,18 @@ void ep_norm_sim(ep_t *r, const ep_t *t, int n);
  * @param[in] len			- the array length in bytes.
  */
 void ep_map(ep_t p, const uint8_t *msg, int len);
+
+/**
+ * Maps a byte array to a point in a prime elliptic curve with specified
+ * domain separation tag (aka personalization string).
+ *
+ * @param[out] p			- the result.
+ * @param[in] msg			- the byte array to map.
+ * @param[in] len			- the array length in bytes.
+ * @param[in] dst			- the domain separation tag.
+ * @param[in] dst_len		- the domain separation tag length in bytes.
+ */
+void ep_map_dst(ep_t p, const uint8_t *msg, int len, const uint8_t *dst, int dst_len);
 
 /**
  * Compresses a point.

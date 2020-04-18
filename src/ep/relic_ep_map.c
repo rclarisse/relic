@@ -31,225 +31,128 @@
 
 #include "relic_core.h"
 #include "relic_md.h"
+#include "relic_tmpl_map.h"
 
 /*============================================================================*/
 /* Private definitions                                                        */
 /*============================================================================*/
 
-/**
- * Optimized Shallue–van de Woestijne encoding from Section 3 of
- * "Fast and simple constant-time hashing to the BLS12-381 elliptic curve".
- */
-static void ep_sw_b12(ep_t p, const fp_t t, int u, int negate) {
-	fp_t t0, t1, t2, t3;
-
-	fp_null(t0);
-	fp_null(t1);
-	fp_null(t2);
-	fp_null(t3);
-
-	TRY {
-		fp_new(t0);
-		fp_new(t1);
-		fp_new(t2);
-		fp_new(t3);
-
-		/* t0 = t^2. */
-		fp_sqr(t0, t);
-		/* Compute f(u) such that u^3 + b is a square. */
-		fp_set_dig(p->x, -u);
-		fp_neg(p->x, p->x);
-		ep_rhs(t1, p);
-		/* Compute t1 = (-f(u) + t^2), t2 = t1 * t^2 and invert if non-zero. */
-		fp_add(t1, t1, t0);
-		fp_mul(t2, t1, t0);
-		if (!fp_is_zero(t2)) {
-			/* Compute inverse of u^3 * t2 and fix later. */
-			fp_mul(t2, t2, p->x);
-			fp_mul(t2, t2, p->x);
-			fp_mul(t2, t2, p->x);
-			fp_inv(t2, t2);
-		}
-		/* Compute t0 = t^4 * u * sqrt(-3)/t2. */
-		fp_sqr(t0, t0);
-		fp_mul(t0, t0, t2);
-		fp_mul(t0, t0, p->x);
-		fp_mul(t0, t0, p->x);
-		fp_mul(t0, t0, p->x);
-		/* Compute constant u * sqrt(-3). */
-		fp_copy(t3, core_get()->srm3);
-		for (int i = 1; i < -u; i++) {
-			fp_add(t3, t3, core_get()->srm3);
-		}
-		fp_mul(t0, t0, t3);
-		/* Compute (u * sqrt(-3) + u)/2 - t0. */
-		fp_add_dig(p->x, t3, -u);
-		fp_hlv(p->y, p->x);
-		fp_sub(p->x, p->y, t0);
-		ep_rhs(p->y, p);
-		if (!fp_srt(p->y, p->y)) {
-			/* Now try t0 - (u * sqrt(-3) - u)/2. */
-			fp_sub_dig(p->x, t3, -u);
-			fp_hlv(p->y, p->x);
-			fp_sub(p->x, t0, p->y);
-			ep_rhs(p->y, p);
-			if (!fp_srt(p->y, p->y)) {
-				/* Finally, try (u - t1^2 / t2). */
-				fp_sqr(p->x, t1);
-				fp_mul(p->x, p->x, t1);
-				fp_mul(p->x, p->x, t2);
-				fp_sub_dig(p->x, p->x, -u);
-				ep_rhs(p->y, p);
-				fp_srt(p->y, p->y);
-			}
-		}
-		if (negate) {
-			fp_neg(p->y, p->y);
-		}
-		fp_set_dig(p->z, 1);
-		p->norm = 1;
-	}
-	CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	}
-	FINALLY {
-		fp_free(t0);
-		fp_free(t1);
-		fp_free(t2);
-		fp_free(t3);
-	}
-}
+#ifdef EP_CTMAP
 
 /**
- * Based on the rust implementation of pairings, zkcrypto/pairing.
- * The algorithm is Shallue–van de Woestijne encoding from
- * Section 3 of "Indifferentiable Hashing to Barreto–Naehrig Curves"
- * from Fouque-Tibouchi: <https://www.di.ens.fr/~fouque/pub/latincrypt12.pdf>
+ * Evaluate a polynomial represented by its coefficients over a using Horner's
+ * rule. Might promove to an API if needed elsewhere in the future.
+ *
+ * @param[out] c		- the result.
+ * @param[in] a			- the input value.
+ * @param[in] coeffs	- the vector of coefficients in the polynomial.
+ * @param[in] deg 		- the degree of the polynomial.
  */
-static void ep_sw_bn(ep_t p, const fp_t t, int u, int negate) {
-	fp_t t0;
-	fp_t t1;
-	if (fp_is_zero(t)) {
-		ep_set_infty(p);
-		return;
-	}
+TMPL_MAP_HORNER(fp, fp_st)
 
-	fp_null(t0);
-	fp_null(t1);
+/**
+ * Generic isogeny map evaluation for use with SSWU map.
+ */
+TMPL_MAP_ISOGENY_MAP()
+#endif /* EP_CTMAP */
 
-	TRY {
-		fp_new(t0);
-		fp_new(t1);
+/**
+ * Simplified SWU mapping from Section 4 of
+ * "Fast and simple constant-time hashing to the BLS12-381 Elliptic Curve"
+ */
+#define EP_MAP_COPY_COND(O, I, C) dv_copy_cond(O, I, RLC_FP_DIGS, C)
+TMPL_MAP_SSWU(,dig_t,EP_MAP_COPY_COND)
 
-		/* w = t^2 + b + 1 */
-		fp_sqr(t0, t);
-		fp_add(t0, t0, ep_curve_get_b());
-		fp_add_dig(t0, t0, 1);
+/**
+ * Shallue--van de Woestijne map, based on the definition from
+ * draft-irtf-cfrg-hash-to-curve-06, Section 6.6.1
+ */
+TMPL_MAP_SVDW(,dig_t,EP_MAP_COPY_COND)
+#undef EP_MAP_COPY_COND
 
-		if (fp_is_zero(t0)) {
-			ep_curve_get_gen(p);
-			return;
-		}
-
-		/* (sqrt(-3) - u) / 2 */
-		fp_copy(t1, core_get()->srm3);
-		fp_sub_dig(t1, t1, -u);
-		fp_hlv(t1, t1);
-
-		fp_inv(t0, t0);
-		fp_mul(t0, t0, core_get()->srm3);
-		fp_mul(t0, t0, t);
-
-		/* x1 = -wt + sqrt(-3) */
-		fp_neg(p->x, t0);
-		fp_mul(p->x, p->x, t);
-		fp_add(p->x, p->x, t1);
-		ep_rhs(p->y, p);
-		if (!fp_srt(p->y, p->y)) {
-			/* x2 = - x1 - u */
-			fp_neg(p->x, p->x);
-			fp_sub_dig(p->x, p->x, -u);
-			ep_rhs(p->y, p);
-			if (!fp_srt(p->y, p->y)) {
-				/* x3 = (w^2 + u)/w^2 */
-				fp_sqr(p->x, t0);
-				fp_inv(p->x, p->x);
-				fp_add_dig(p->x, p->x, -u);
-				ep_rhs(p->y, p);
-				fp_srt(p->y, p->y);
-				p->norm = 0;
-			}
-		}
-
-		if (negate) {
-			fp_neg(p->y, p->y);
-		}
-		fp_set_dig(p->z, 1);
-		p->norm = 1;
-	}
-	CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	}
-	FINALLY {
-		fp_free(t0);
-		fp_free(t1);
-	}
+/* caution: this function overwrites k, which it uses as an auxiliary variable */
+static inline int fp_sgn0(const fp_t t, bn_t k) {
+	fp_prime_back(k, t);
+	return bn_get_bit(k, 0);
 }
 
-/*============================================================================*/
-/* Public definitions                                                         */
-/*============================================================================*/
-
-void ep_map(ep_t p, const uint8_t *msg, int len) {
-	bn_t k, pm1o2;
+void ep_map_impl(ep_t p, const uint8_t *msg, int len, const uint8_t *dst, int dst_len) {
+	bn_t k;
 	fp_t t;
 	ep_t q;
-	uint8_t digest[RLC_MD_LEN];
 	int neg;
+	/* enough space for two field elements plus extra bytes for uniformity */
+	const int len_per_elm = (FP_PRIME + ep_param_level() + 7) / 8;
+	uint8_t *pseudo_random_bytes = RLC_ALLOCA(uint8_t, 4 * len_per_elm);
 
 	bn_null(k);
-	bn_null(pm1o2);
 	fp_null(t);
 	ep_null(q);
 
 	TRY {
 		bn_new(k);
-		bn_new(pm1o2);
 		fp_new(t);
 		ep_new(q);
 
-		pm1o2->sign = RLC_POS;
-		pm1o2->used = RLC_FP_DIGS;
-		dv_copy(pm1o2->dp, fp_prime_get(), RLC_FP_DIGS);
-		bn_hlv(pm1o2, pm1o2);
-		md_map(digest, msg, len);
-		bn_read_bin(k, digest, RLC_MIN(RLC_FP_BYTES, RLC_MD_LEN));
-		fp_prime_conv(t, k);
-		fp_prime_back(k, t);
-		neg = (bn_cmp(k, pm1o2) == RLC_LT ? 0 : 1);
+		/* figure out which hash function to use */
+		const int abNeq0 = (ep_curve_opt_a() != RLC_ZERO) && (ep_curve_opt_b() != RLC_ZERO);
+		void (*const map_fn)(ep_t, fp_t) = (ep_curve_is_ctmap() || abNeq0) ? ep_map_sswu : ep_map_svdw;
 
+		/* for hash_to_field, need to hash to a pseudorandom string */
+		/* XXX(rsw) the below assumes that we want to use MD_MAP for hashing.
+		 *          Consider making the hash function a per-curve option!
+		 */
+		md_xmd(pseudo_random_bytes, 2 * len_per_elm, msg, len, dst, dst_len);
+
+#define EP_MAP_CONVERT_BYTES(IDX)                                              \
+	do {                                                                       \
+		bn_read_bin(k, pseudo_random_bytes + IDX * len_per_elm, len_per_elm);  \
+		fp_prime_conv(t, k);                                                   \
+	} while (0)
+
+#define EP_MAP_APPLY_MAP(PT)                                                   \
+	do {                                                                       \
+		/* check sign of t */                                                  \
+		neg = fp_sgn0(t, k);                                                   \
+		/* convert */                                                          \
+		map_fn(PT, t);                                                         \
+		/* compare sign of y and sign of t; fix if necessary */                \
+		neg = neg != fp_sgn0(PT->y, k);                                        \
+		fp_neg(t, PT->y);                                                      \
+		dv_copy_cond(PT->y, t, RLC_FP_DIGS, neg);                              \
+	} while (0)
+
+		/* first map invocation */
+		EP_MAP_CONVERT_BYTES(0);
+		EP_MAP_APPLY_MAP(p);
+		TMPL_MAP_CALL_ISOMAP(,p);
+
+		/* second map invocation */
+		EP_MAP_CONVERT_BYTES(1);
+		EP_MAP_APPLY_MAP(q);
+		TMPL_MAP_CALL_ISOMAP(,q);
+
+		/* XXX(rsw) could add p and q and then apply isomap,
+		 * but need ep_add to support addition on isogeny curves */
+
+#undef EP_MAP_CONVERT_BYTES
+#undef EP_MAP_APPLY_MAP
+
+		/* sum the result */
+		ep_add(p, p, q);
+		ep_norm(p, p);
+
+		/* clear cofactor */
 		switch (ep_curve_is_pairf()) {
 			case EP_BN:
-				ep_sw_bn(p, t, -1, neg);
-				md_map(digest, digest, RLC_MD_LEN);
-				bn_read_bin(k, digest, RLC_MIN(RLC_FP_BYTES, RLC_MD_LEN));
-				fp_prime_conv(t, k);
-				fp_prime_back(k, t);
-				neg = (bn_cmp(k, pm1o2) == RLC_LT ? 0 : 1);
-				ep_sw_bn(q, t, -1, neg);
-				ep_add(p, p, q);
-				ep_norm(p, p);
+				/* h = 1 */
 				break;
 			case EP_B12:
-				ep_sw_b12(p, t, -3, neg);
-				md_map(digest, digest, RLC_MD_LEN);
-				bn_read_bin(k, digest, RLC_MIN(RLC_FP_BYTES, RLC_MD_LEN));
-				fp_prime_conv(t, k);
-				neg = (bn_cmp(k, pm1o2) == RLC_LT ? 0 : 1);
-				ep_sw_b12(q, t, -3, neg);
-				ep_add(p, p, q);
-				ep_norm(p, p);
-				/* Now, multiply by cofactor to get the correct group. */
+				/* multiply by 1-x (x the BLS parameter) to get the correct group. */
+				/* XXX(rsw) is this guaranteed to work? It could fail if one
+				 *          of the prime-squared subgroups is cyclic, but
+				 *          maybe there's an argument that this is never the case...
+				 */
 				fp_prime_get_par(k);
 				bn_neg(k, k);
 				bn_add_dig(k, k, 1);
@@ -259,28 +162,13 @@ void ep_map(ep_t p, const uint8_t *msg, int len) {
 					ep_mul(p, p, k);
 				}
 				break;
-			default:{
-					fp_prime_conv(p->x, k);
-					fp_zero(p->y);
-					fp_set_dig(p->z, 1);
-
-					while (1) {
-						ep_rhs(t, p);
-
-						if (fp_srt(p->y, t)) {
-							p->norm = 1;
-							break;
-						}
-						fp_add_dig(p->x, p->x, 1);
-					}
-
-					/* Now, multiply by cofactor to get the correct group. */
-					ep_curve_get_cof(k);
-					if (bn_bits(k) < RLC_DIG) {
-						ep_mul_dig(p, p, k->dp[0]);
-					} else {
-						ep_mul_basic(p, p, k);
-					}
+			default:
+				/* multiply by cofactor to get the correct group. */
+				ep_curve_get_cof(k);
+				if (bn_bits(k) < RLC_DIG) {
+					ep_mul_dig(p, p, k->dp[0]);
+				} else {
+					ep_mul_basic(p, p, k);
 				}
 		}
 	}
@@ -289,8 +177,16 @@ void ep_map(ep_t p, const uint8_t *msg, int len) {
 	}
 	FINALLY {
 		bn_free(k);
-		bn_free(pm1o2);
 		fp_free(t);
 		ep_free(q);
+		RLC_FREE(pseudo_random_bytes);
 	}
+}
+
+/*============================================================================*/
+/* Public definitions                                                         */
+/*============================================================================*/
+
+void ep_map(ep_t p, const uint8_t *msg, int len) {
+	ep_map_impl(p, msg, len, (const uint8_t *)"RELIC", 5);
 }

@@ -784,6 +784,28 @@ static int square_root2(void) {
 		fp2_new(c);
 
 		TEST_BEGIN("square root extraction is correct") {
+			fp2_zero(a);
+			fp2_sqr(c, a);
+			r = fp2_srt(b, c);
+			TEST_ASSERT(r, end);
+			TEST_ASSERT(fp2_cmp(b, a) == RLC_EQ ||
+					fp2_cmp(c, a) == RLC_EQ, end);
+			fp_rand(a[0]);
+			fp_zero(a[1]);
+			fp2_sqr(c, a);
+			r = fp2_srt(b, c);
+			fp2_neg(c, b);
+			TEST_ASSERT(r, end);
+			TEST_ASSERT(fp2_cmp(b, a) == RLC_EQ ||
+					fp2_cmp(c, a) == RLC_EQ, end);
+			fp_zero(a[0]);
+			fp_rand(a[1]);
+			fp2_sqr(c, a);
+			r = fp2_srt(b, c);
+			fp2_neg(c, b);
+			TEST_ASSERT(r, end);
+			TEST_ASSERT(fp2_cmp(b, a) == RLC_EQ ||
+					fp2_cmp(c, a) == RLC_EQ, end);
 			fp2_rand(a);
 			fp2_sqr(c, a);
 			r = fp2_srt(b, c);
@@ -4264,6 +4286,16 @@ static int cyclotomic12(void) {
 			bn_neg(f, f);
 			fp12_exp_cyc(c, a, f);
 			fp12_inv_cyc(c, c);
+			/* Try sparse exponents as well. */
+			bn_set_2b(f, RLC_FP_BITS - 1);
+			bn_set_bit(f, RLC_FP_BITS / 2, 1);
+			bn_set_bit(f, 0, 1);
+			fp12_rand(a);
+			fp12_conv_cyc(a, a);
+			fp12_exp_cyc(b, a, f);
+			bn_neg(f, f);
+			fp12_exp_cyc(c, a, f);
+			fp12_inv_cyc(c, c);
 			TEST_ASSERT(fp12_cmp(b, c) == RLC_EQ, end);
         } TEST_END;
 
@@ -6037,6 +6069,16 @@ static int cyclotomic48(void) {
 			bn_neg(f, f);
 			fp48_exp_cyc(c, a, f);
 			fp48_inv_cyc(c, c);
+			/* Try sparse exponents as well. */
+			bn_set_2b(f, RLC_FP_BITS - 1);
+			bn_set_bit(f, RLC_FP_BITS / 2, 1);
+			bn_set_bit(f, 0, 1);
+			fp48_rand(a);
+			fp48_conv_cyc(a, a);
+			fp48_exp_cyc(b, a, f);
+			bn_neg(f, f);
+			fp48_exp_cyc(c, a, f);
+			fp48_inv_cyc(c, c);
 			TEST_ASSERT(fp48_cmp(b, c) == RLC_EQ, end);
         } TEST_END;
 
@@ -6773,6 +6815,16 @@ static int cyclotomic54(void) {
 			bn_neg(f, f);
 			fp54_exp_cyc(c, a, f);
 			fp54_inv_cyc(c, c);
+			/* Try sparse exponents as well. */
+			bn_set_2b(f, RLC_FP_BITS - 1);
+			bn_set_bit(f, RLC_FP_BITS / 2, 1);
+			bn_set_bit(f, 0, 1);
+			fp54_rand(a);
+			fp54_conv_cyc(a, a);
+			fp54_exp_cyc(b, a, f);
+			bn_neg(f, f);
+			fp54_exp_cyc(c, a, f);
+			fp54_inv_cyc(c, c);
 			TEST_ASSERT(fp54_cmp(b, c) == RLC_EQ, end);
         } TEST_END;
 
@@ -7123,7 +7175,7 @@ int main(void) {
 
 	/* Fp^6 is defined as a cubic extension of Fp^2. */
 	if (fp_prime_get_qnr()) {
-		util_print("\n-- Sextic extension: (i + %d) as QNR\n",
+		util_print("\n-- Sextic extension: (i + %d) as CNR\n",
 				fp2_field_get_qnr());
 		util_banner("Utilities:", 1);
 
@@ -7174,7 +7226,7 @@ int main(void) {
 			return 1;
 		}
 
-		util_banner("Octic extension:", 0);
+		util_banner("Octic extension: (j) as CNR", 0);
 		util_banner("Utilities:", 1);
 
 		if (memory8() != RLC_OK) {

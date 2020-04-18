@@ -40,6 +40,8 @@
 /* Public definitions                                                         */
 /*============================================================================*/
 
+#include "bls12_381_q_64.c"
+
 dig_t fp_add1_low(dig_t *c, const dig_t *a, const dig_t digit) {
 	return mpn_add_1(c, a, RLC_FP_DIGS, digit);
 }
@@ -49,13 +51,7 @@ dig_t fp_addn_low(dig_t *c, const dig_t *a, const dig_t *b) {
 }
 
 void fp_addm_low(dig_t *c, const dig_t *a, const dig_t *b) {
-	dig_t carry;
-
-	carry = mpn_add_n(c, a, b, RLC_FP_DIGS);
-
-	if (carry || (dv_cmp(c, fp_prime_get(), RLC_FP_DIGS) != RLC_LT)) {
-		carry = mpn_sub_n(c, c, fp_prime_get(), RLC_FP_DIGS);
-	}
+	fiat_bls12_381_q_add(c, a, b);
 }
 
 dig_t fp_addd_low(dig_t *c, const dig_t *a, const dig_t *b) {
@@ -81,9 +77,7 @@ dig_t fp_subn_low(dig_t *c, const dig_t *a, const dig_t *b) {
 }
 
 void fp_subm_low(dig_t *c, const dig_t *a, const dig_t *b) {
-	if (mpn_sub_n(c, a, b, RLC_FP_DIGS)) {
-		mpn_add_n(c, c, fp_prime_get(), RLC_FP_DIGS);
-	}
+	fiat_bls12_381_q_sub(c, a, b);
 }
 
 dig_t fp_subd_low(dig_t *c, const dig_t *a, const dig_t *b) {
@@ -97,11 +91,7 @@ void fp_subc_low(dig_t *c, const dig_t *a, const dig_t *b) {
 }
 
 void fp_negm_low(dig_t *c, const dig_t *a) {
-	if (fp_is_zero(a)) {
-		fp_zero(c);
-	} else {
-		mpn_sub_n(c, fp_prime_get(), a, RLC_FP_DIGS);
-	}
+	fiat_bls12_381_q_opp(c, a);
 }
 
 dig_t fp_dbln_low(dig_t *c, const dig_t *a) {
