@@ -46,7 +46,7 @@
  * @param p			- the point to normalize.
  */
 static void ed_norm_imp(ed_t r, const ed_t p, int inverted) {
-	if (!p->norm) {
+	if (p->coord != BASIC) {
 		if (inverted) {
 			fp_copy(r->z, p->z);
 		} else {
@@ -56,15 +56,14 @@ static void ed_norm_imp(ed_t r, const ed_t p, int inverted) {
 		fp_mul(r->y, p->y, r->z);
 #if ED_ADD == EXTND
 		fp_mul(r->t, p->t, r->z);
-		fp_mul(r->z, r->x, r->y);
 #endif
 		fp_set_dig(r->z, 1);
 
-		r->norm = 1;
+		r->coord = BASIC;
 	}
 }
 
-#endif /* EP_ADD == PROJC */
+#endif /* ED_ADD == PROJC */
 
 /*============================================================================*/
 /* Public definitions                                                         */
@@ -76,14 +75,14 @@ void ed_norm(ed_t r, const ed_t p) {
 		return;
 	}
 
-	if (p->norm) {
+	if (p->coord == BASIC) {
 		/* If the point is represented in affine coordinates, just copy it. */
 		ed_copy(r, p);
 		return;
 	}
 #if ED_ADD == PROJC || ED_ADD == EXTND || !defined(STRIP)
 	ed_norm_imp(r, p, 0);
-#endif /* EP_ADD != BASIC*/
+#endif /* ED_ADD != BASIC*/
 }
 
 void ed_norm_sim(ed_t *r, const ed_t *t, int n) {

@@ -857,6 +857,17 @@ void bn_div_dig(bn_t c, const bn_t a, dig_t b);
 void bn_div_rem_dig(bn_t c, dig_t *d, const bn_t a, const dig_t b);
 
 /**
+ * Computes the modular inverse of a multiple precision integer. Computes c such
+ * that a*c mod b = 1.
+ *
+ * @param[out] c 			- the result.
+ * @param[in] a				- the element to invert.
+ * param[in] b				- the modulus.
+ *
+ */
+void bn_mod_inv(bn_t c, const bn_t a, const bn_t b);
+
+/**
  * Reduces a multiple precision integer modulo a power of 2. Computes
  * c = a mod 2^b.
  *

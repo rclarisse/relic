@@ -66,32 +66,6 @@ static void rsa(void) {
 		BENCH_ADD(cp_rsa_dec(new, &new_len, out, out_len, prv));
 	} BENCH_END;
 
-#if CP_RSA == BASIC || !defined(STRIP)
-	BENCH_ONCE("cp_rsa_gen_basic", cp_rsa_gen_basic(pub, prv, RLC_BN_BITS));
-
-	BENCH_BEGIN("cp_rsa_dec_basic") {
-		out_len = RLC_BN_BITS / 8 + 1;
-		new_len =out_len;
-		rand_bytes(in, sizeof(in));
-		cp_rsa_enc(out, &out_len, in, sizeof(in), pub);
-		BENCH_ADD(cp_rsa_dec_basic(new, &new_len, out, out_len, prv));
-	} BENCH_END;
-#endif
-
-#if CP_RSA == QUICK || !defined(STRIP)
-	BENCH_ONCE("cp_rsa_gen_quick", cp_rsa_gen_quick(pub, prv, RLC_BN_BITS));
-
-	BENCH_BEGIN("cp_rsa_dec_quick") {
-		out_len = RLC_BN_BITS / 8 + 1;
-		new_len =out_len;
-		rand_bytes(in, sizeof(in));
-		cp_rsa_enc(out, &out_len, in, sizeof(in), pub);
-		BENCH_ADD(cp_rsa_dec_quick(new, &new_len, out, out_len, prv));
-	} BENCH_END;
-#endif
-
-	BENCH_ONCE("cp_rsa_gen", cp_rsa_gen(pub, prv, RLC_BN_BITS));
-
 	BENCH_BEGIN("cp_rsa_sig (h = 0)") {
 		out_len = RLC_BN_BITS / 8 + 1;
 		new_len = out_len;
@@ -123,44 +97,6 @@ static void rsa(void) {
 		cp_rsa_sig(out, &out_len, h, RLC_MD_LEN, 1, prv);
 		BENCH_ADD(cp_rsa_ver(out, out_len, h, RLC_MD_LEN, 1, pub));
 	} BENCH_END;
-
-#if CP_RSA == BASIC || !defined(STRIP)
-	BENCH_ONCE("cp_rsa_gen_basic", cp_rsa_gen_basic(pub, prv, RLC_BN_BITS));
-
-	BENCH_BEGIN("cp_rsa_sig_basic (h = 0)") {
-		out_len = RLC_BN_BITS / 8 + 1;
-		new_len = out_len;
-		rand_bytes(in, sizeof(in));
-		BENCH_ADD(cp_rsa_sig_basic(out, &out_len, in, sizeof(in), 0, prv));
-	} BENCH_END;
-
-	BENCH_BEGIN("cp_rsa_sig_basic (h = 1)") {
-		out_len = RLC_BN_BITS / 8 + 1;
-		new_len = out_len;
-		rand_bytes(in, sizeof(in));
-		md_map(h, in, sizeof(in));
-		BENCH_ADD(cp_rsa_sig_basic(out, &out_len, h, RLC_MD_LEN, 1, prv));
-	} BENCH_END;
-#endif
-
-#if CP_RSA == QUICK || !defined(STRIP)
-	BENCH_ONCE("cp_rsa_gen_quick", cp_rsa_gen_quick(pub, prv, RLC_BN_BITS));
-
-	BENCH_BEGIN("cp_rsa_sig_quick (h = 0)") {
-		out_len = RLC_BN_BITS / 8 + 1;
-		new_len = out_len;
-		rand_bytes(in, sizeof(in));
-		BENCH_ADD(cp_rsa_sig_quick(out, &out_len, in, sizeof(in), 0, prv));
-	} BENCH_END;
-
-	BENCH_BEGIN("cp_rsa_sig_quick (h = 1)") {
-		out_len = RLC_BN_BITS / 8 + 1;
-		new_len = out_len;
-		rand_bytes(in, sizeof(in));
-		md_map(h, in, sizeof(in));
-		BENCH_ADD(cp_rsa_sig_quick(out, &out_len, in, sizeof(in), 1, prv));
-	} BENCH_END;
-#endif
 
 	rsa_free(pub);
 	rsa_free(prv);
@@ -235,38 +171,62 @@ static void benaloh(void) {
 }
 
 static void paillier(void) {
-	bn_t n, l;
-	uint8_t in[1000], new[1000], out[RLC_BN_BITS / 8 + 1];
-	int in_len, out_len;
+	bn_t c, m, pub;
+	phpe_t prv;
 
-	bn_null(n);
-	bn_null(l);
+	bn_null(c);
+	bn_null(m);
+	bn_null(pub);
+	phpe_null(prv);
 
-	bn_new(n);
-	bn_new(l);
+	bn_new(c);
+	bn_new(m);
+	bn_new(pub);
+	phpe_new(prv);
 
-	BENCH_ONCE("cp_phpe_gen", cp_phpe_gen(n, l, RLC_BN_BITS / 2));
+	BENCH_ONCE("cp_phpe_gen", cp_phpe_gen(pub, prv, RLC_BN_BITS / 2));
 
 	BENCH_BEGIN("cp_phpe_enc") {
-		in_len = bn_size_bin(n);
-		out_len = RLC_BN_BITS / 8 + 1;
-		memset(in, 0, sizeof(in));
-		rand_bytes(in + 1, in_len - 1);
-		BENCH_ADD(cp_phpe_enc(out, &out_len, in, in_len, n));
-		cp_phpe_dec(new, in_len, out, out_len, n, l);
+		bn_rand_mod(m, pub);
+		BENCH_ADD(cp_phpe_enc(c, m, pub));
 	} BENCH_END;
 
 	BENCH_BEGIN("cp_phpe_dec") {
-		in_len = bn_size_bin(n);
-		out_len = RLC_BN_BITS / 8 + 1;
-		memset(in, 0, sizeof(in));
-		rand_bytes(in + 1, in_len - 1);
-		cp_phpe_enc(out, &out_len, in, in_len, n);
-		BENCH_ADD(cp_phpe_dec(new, in_len, out, out_len, n, l));
+		bn_rand_mod(m, pub);
+		cp_phpe_enc(c, m, pub);
+		BENCH_ADD(cp_phpe_dec(m, c, prv));
 	} BENCH_END;
 
-	bn_free(n);
-	bn_free(l);
+	BENCH_ONCE("cp_ghpe_gen", cp_ghpe_gen(pub, prv->n, RLC_BN_BITS / 2));
+
+	BENCH_BEGIN("cp_ghpe_enc (1)") {
+		bn_rand_mod(m, pub);
+		BENCH_ADD(cp_ghpe_enc(c, m, pub, 1));
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_ghpe_dec (1)") {
+		bn_rand_mod(m, pub);
+		cp_ghpe_enc(m, c, pub, 1);
+		BENCH_ADD(cp_ghpe_dec(c, m, pub, prv->n, 1));
+	} BENCH_END;
+
+	BENCH_ONCE("cp_ghpe_gen", cp_ghpe_gen(pub, prv->n, RLC_BN_BITS / 4));
+
+	BENCH_BEGIN("cp_ghpe_enc (2)") {
+		bn_rand(m, RLC_POS, 2 * bn_bits(pub) - 1);
+		BENCH_ADD(cp_ghpe_enc(m, c, pub, 2));
+	} BENCH_END;
+
+	BENCH_BEGIN("cp_ghpe_dec (2)") {
+		bn_rand(m, RLC_POS, 2 * bn_bits(pub) - 1);
+		cp_ghpe_enc(m, c, pub, 2);
+		BENCH_ADD(cp_ghpe_dec(c, m, pub, prv->n, 2));
+	} BENCH_END;
+
+	bn_free(c);
+	bn_free(m);
+	bn_free(pub);
+	phpe_free(prv);
 }
 
 #endif

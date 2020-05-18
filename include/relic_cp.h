@@ -47,65 +47,72 @@
 /*============================================================================*/
 
 /**
- * Represents an RSA key pair.
+ * Represents a pair of moduli for using the Chinese Remainder Theorem (CRT).
  */
-typedef struct _rsa_t {
+typedef struct {
 	/** The modulus n = pq. */
 	bn_t n;
-	/** The public exponent. */
-	bn_t e;
-	/** The private exponent. */
-	bn_t d;
 	/** The first prime p. */
 	bn_t p;
 	/** The second prime q. */
 	bn_t q;
-	/** The inverse of e modulo (p-1). */
+	/** The precomputed costant for the first prime. */
 	bn_t dp;
-	/** The inverse of e modulo (q-1). */
+	/** The precomputed costant for the second prime. */
 	bn_t dq;
 	/** The inverse of q modulo p. */
 	bn_t qi;
-} relic_rsa_st;
+} crt_st;
+
+#if ALLOC == AUTO
+typedef crt_st crt_t[1];
+#else
+typedef crt_st *crt_t;
+#endif
+
+/**
+ * Represents an RSA key pair.
+ */
+typedef struct {
+	/** The private exponent. */
+	bn_t d;
+	/** The public exponent. */
+	bn_t e;
+	/** The pair of moduli. */
+	crt_t crt;
+} _rsa_st;
 
 /**
  * Pointer to an RSA key pair.
  */
 #if ALLOC == AUTO
-typedef relic_rsa_st rsa_t[1];
+typedef _rsa_st rsa_t[1];
 #else
-typedef relic_rsa_st *rsa_t;
+typedef _rsa_st *rsa_t;
 #endif
-
-/**
- * Represents a Rabin key pair.
- */
-typedef struct _rabin_t {
-	/** The modulus n = pq. */
-	bn_t n;
-	/** The first prime p. */
-	bn_t p;
-	/** The second prime q. */
-	bn_t q;
-	/** The cofactor of the first prime. */
-	bn_t dp;
-	/** The cofactor of the second prime. */
-	bn_t dq;
-} rabin_st;
 
 /**
  * Pointer to a Rabin key pair.
  */
 #if ALLOC == AUTO
-typedef rabin_st rabin_t[1];
+typedef crt_st rabin_t[1];
 #else
-typedef rabin_st *rabin_t;
+typedef crt_st *rabin_t;
+#endif
+
+/**
+ * Pointer to a Paillier's Homomorphic Probabilistic Encryption key pair.
+ */
+#if ALLOC == AUTO
+typedef crt_st phpe_t[1];
+#else
+typedef crt_st *phpe_t;
 #endif
 
 /**
  * Represents a Benaloh's Dense Probabilistic Encryption key pair.
  */
-typedef struct _bdpe_t {
+typedef struct {
 	/** The modulus n = pq. */
 	bn_t n;
 	/** The first prime p. */
@@ -149,7 +156,7 @@ typedef sokaka_st *sokaka_t;
 /**
  * Represents a Boneh-Goh-Nissim cryptosystem key pair.
  */
-typedef struct _bgn_t {
+typedef struct {
 	/** The first exponent. */
 	bn_t x;
 	/** The second exponent. */
@@ -171,7 +178,7 @@ typedef struct _bgn_t {
 } bgn_st;
 
 /**
- * Pointer to a a Boneh-Goh-Nissim cryptosystem key pair.
+ * Pointer to a Boneh-Goh-Nissim cryptosystem key pair.
  */
 #if ALLOC == AUTO
 typedef bgn_st bgn_t[1];
@@ -182,6 +189,87 @@ typedef bgn_st *bgn_t;
 /*============================================================================*/
 /* Macro definitions                                                          */
 /*============================================================================*/
+
+/**
+ * Initializes a CRT moduli set with a null value.
+ *
+ * @param[out] A			- the moduli to initialize.
+ */
+#if ALLOC == AUTO
+#define crt_null(A)				/* empty */
+#else
+#define crt_null(A)			A = NULL;
+#endif
+
+/**
+ * Calls a function to allocate and initialize a Rabin key pair.
+ *
+ * @param[out] A			- the new key pair.
+ */
+#if ALLOC == DYNAMIC
+#define crt_new(A)														\
+	A = (crt_t)calloc(1, sizeof(crt_st));								\
+	if (A == NULL) {														\
+		THROW(ERR_NO_MEMORY);												\
+	}																		\
+	bn_new((A)->n);															\
+	bn_new((A)->dp);														\
+	bn_new((A)->dq);														\
+	bn_new((A)->p);															\
+	bn_new((A)->q);															\
+	bn_new((A)->qi);														\
+
+#elif ALLOC == AUTO
+#define crt_new(A)															\
+	bn_new((A)->n);															\
+	bn_new((A)->dp);														\
+	bn_new((A)->dq);														\
+	bn_new((A)->p);															\
+	bn_new((A)->q);															\
+	bn_new((A)->qi);														\
+
+#elif ALLOC == STACK
+#define crt_new(A)															\
+	A = (crt_t)alloca(sizeof(crt_st));										\
+	bn_new((A)->n);															\
+	bn_new((A)->dp);														\
+	bn_new((A)->dq);														\
+	bn_new((A)->p);															\
+	bn_new((A)->q);															\
+	bn_new((A)->qi);														\
+
+#endif
+
+/**
+ * Calls a function to clean and free a Rabin key pair.
+ *
+ * @param[out] A			- the key pair to clean and free.
+ */
+#if ALLOC == DYNAMIC
+#define crt_free(A)															\
+	if (A != NULL) {														\
+		bn_free((A)->n);													\
+		bn_free((A)->dp);													\
+		bn_free((A)->dq);													\
+		bn_free((A)->p);													\
+		bn_free((A)->q);													\
+		free(A);															\
+		A = NULL;															\
+	}
+
+#elif ALLOC == AUTO
+#define crt_free(A)			/* empty */
+
+#elif ALLOC == STACK
+#define crt_free(A)															\
+	bn_free((A)->n);														\
+	bn_free((A)->dp);														\
+	bn_free((A)->dq);														\
+	bn_free((A)->p);														\
+	bn_free((A)->q);														\
+	A = NULL;																\
+
+#endif
 
 /**
  * Initializes an RSA key pair with a null value.
@@ -201,49 +289,28 @@ typedef bgn_st *bgn_t;
  */
 #if ALLOC == DYNAMIC
 #define rsa_new(A)															\
-	A = (rsa_t)calloc(1, sizeof(relic_rsa_st));									\
+	A = (rsa_t)calloc(1, sizeof(_rsa_st));									\
 	if (A == NULL) {														\
 		THROW(ERR_NO_MEMORY);												\
 	}																		\
-	bn_null((A)->e);														\
-	bn_null((A)->n);														\
 	bn_null((A)->d);														\
-	bn_null((A)->dp);														\
-	bn_null((A)->dq);														\
-	bn_null((A)->p);														\
-	bn_null((A)->q);														\
-	bn_null((A)->qi);														\
-	bn_new((A)->e);															\
-	bn_new((A)->n);															\
+	bn_null((A)->e);														\
 	bn_new((A)->d);															\
-	bn_new((A)->dp);														\
-	bn_new((A)->dq);														\
-	bn_new((A)->p);															\
-	bn_new((A)->q);															\
-	bn_new((A)->qi);														\
+	bn_new((A)->e);															\
+	crt_new((A)->crt);														\
 
 #elif ALLOC == AUTO
 #define rsa_new(A)															\
-	bn_new((A)->e);															\
-	bn_new((A)->n);															\
 	bn_new((A)->d);															\
-	bn_new((A)->dp);														\
-	bn_new((A)->dq);														\
-	bn_new((A)->p);															\
-	bn_new((A)->q);															\
-	bn_new((A)->qi);														\
+	bn_new((A)->e);															\
+	crt_new((A)->crt);														\
 
 #elif ALLOC == STACK
 #define rsa_new(A)															\
-	A = (rsa_t)alloca(sizeof(relic_rsa_st));										\
+	A = (rsa_t)alloca(sizeof(_rsa_st));										\
 	bn_new((A)->e);															\
-	bn_new((A)->n);															\
 	bn_new((A)->d);															\
-	bn_new((A)->dp);														\
-	bn_new((A)->dq);														\
-	bn_new((A)->p);															\
-	bn_new((A)->q);															\
-	bn_new((A)->qi);														\
+	crt_new((A)->crt);														\
 
 #endif
 
@@ -255,14 +322,9 @@ typedef bgn_st *bgn_t;
 #if ALLOC == DYNAMIC
 #define rsa_free(A)															\
 	if (A != NULL) {														\
-		bn_free((A)->e);													\
-		bn_free((A)->n);													\
 		bn_free((A)->d);													\
-		bn_free((A)->dp);													\
-		bn_free((A)->dq);													\
-		bn_free((A)->p);													\
-		bn_free((A)->q);													\
-		bn_free((A)->qi);													\
+		bn_free((A)->e);													\
+		crt_free((A)->crt);													\
 		free(A);															\
 		A = NULL;															\
 	}
@@ -272,14 +334,9 @@ typedef bgn_st *bgn_t;
 
 #elif ALLOC == STACK
 #define rsa_free(A)															\
-	bn_free((A)->e);														\
-	bn_free((A)->n);														\
 	bn_free((A)->d);														\
-	bn_free((A)->dp);														\
-	bn_free((A)->dq);														\
-	bn_free((A)->p);														\
-	bn_free((A)->q);														\
-	bn_free((A)->qi);														\
+	bn_free((A)->e);														\
+	crt_free((A)->crt);														\
 	A = NULL;																\
 
 #endif
@@ -290,7 +347,7 @@ typedef bgn_st *bgn_t;
  * @param[out] A			- the key pair to initialize.
  */
 #if ALLOC == AUTO
-#define rabin_null(A)			/* empty */
+#define rabin_null(A)		/* empty */
 #else
 #define rabin_null(A)		A = NULL;
 #endif
@@ -300,68 +357,39 @@ typedef bgn_st *bgn_t;
  *
  * @param[out] A			- the new key pair.
  */
-#if ALLOC == DYNAMIC
-#define rabin_new(A)														\
-	A = (rabin_t)calloc(1, sizeof(rabin_st));								\
-	if (A == NULL) {														\
-		THROW(ERR_NO_MEMORY);												\
-	}																		\
-	bn_new((A)->n);															\
-	bn_new((A)->dp);														\
-	bn_new((A)->dq);														\
-	bn_new((A)->p);															\
-	bn_new((A)->q);															\
-
-#elif ALLOC == AUTO
-#define rabin_new(A)														\
-	bn_new((A)->n);															\
-	bn_new((A)->dp);														\
-	bn_new((A)->dq);														\
-	bn_new((A)->p);															\
-	bn_new((A)->q);															\
-
-#elif ALLOC == STACK
-#define rabin_new(A)														\
-	A = (rabin_t)alloca(sizeof(rabin_st));									\
-	bn_new((A)->n);															\
-	bn_new((A)->dp);														\
-	bn_new((A)->dq);														\
-	bn_new((A)->p);															\
-	bn_new((A)->q);															\
-
-#endif
+#define rabin_new(A)		crt_new(A)
 
 /**
  * Calls a function to clean and free a Rabin key pair.
  *
  * @param[out] A			- the key pair to clean and free.
  */
-#if ALLOC == DYNAMIC
-#define rabin_free(A)														\
-	if (A != NULL) {														\
-		bn_free((A)->n);													\
-		bn_free((A)->dp);													\
-		bn_free((A)->dq);													\
-		bn_free((A)->p);													\
-		bn_free((A)->q);													\
-		free(A);															\
-		A = NULL;															\
-	}
+#define rabin_free(A)		crt_free(A)
 
-#elif ALLOC == AUTO
-#define rabin_free(A)			/* empty */
-
-#elif ALLOC == STACK
-#define rabin_free(A)														\
-	bn_free((A)->n);														\
-	bn_free((A)->dp);														\
-	bn_free((A)->dq);														\
-	bn_free((A)->p);														\
-	bn_free((A)->q);														\
-	A = NULL;																\
-
+/**
+ * Initializes a Paillier key pair with a null value.
+ *
+ * @param[out] A			- the key pair to initialize.
+ */
+#if ALLOC == AUTO
+#define phpe_null(A)		/* empty */
+#else
+#define phpe_null(A)		A = NULL;
 #endif
 
+/**
+ * Calls a function to allocate and initialize a Paillier key pair.
+ *
+ * @param[out] A			- the new key pair.
+ */
+#define phpe_new(A)			crt_new(A)
+
+/**
+ * Calls a function to clean and free a Paillier key pair.
+ *
+ * @param[out] A			- the key pair to clean and free.
+ */
+#define phpe_free(A)		crt_free(A)
 /**
  * Initializes a Benaloh's key pair with a null value.
  *
@@ -589,76 +617,20 @@ typedef bgn_st *bgn_t;
 
 #endif
 
-/**
- * Generates a new RSA key pair.
- *
- * @param[out] PB			- the public key.
- * @param[out] PV			- the private key.
- * @param[in] B				- the key length in bits.
- * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
- */
-#if CP_RSA == BASIC
-#define cp_rsa_gen(PB, PV, B)				cp_rsa_gen_basic(PB, PV, B)
-#elif CP_RSA == QUICK
-#define cp_rsa_gen(PB, PV, B)				cp_rsa_gen_quick(PB, PV, B)
-#endif
-
-/**
- * Decrypts using RSA.
- *
- * @param[out] O			- the output buffer.
- * @param[out] OL			- the number of bytes written in the output buffer.
- * @param[in] I				- the input buffer.
- * @param[in] IL			- the number of bytes to encrypt.
- * @param[in] K				- the private key.
- * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
- */
-#if CP_RSA == BASIC
-#define cp_rsa_dec(O, OL, I, IL, K)			cp_rsa_dec_basic(O, OL, I, IL, K)
-#elif CP_RSA == QUICK
-#define cp_rsa_dec(O, OL, I, IL, K)			cp_rsa_dec_quick(O, OL, I, IL, K)
-#endif
-
-/**
- * Signs a message using the RSA cryptosystem.
- *
- * @param[out] O			- the output buffer.
- * @param[out] OL			- the number of bytes written in the output buffer.
- * @param[in] I				- the input buffer.
- * @param[in] IL			- the number of bytes to sign.
- * @param[in] H				- the flag to indicate the message format.
- * @param[in] K				- the private key.
- * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
- */
-#if CP_RSA == BASIC
-#define cp_rsa_sig(O, OL, I, IL, H, K)	cp_rsa_sig_basic(O, OL, I, IL, H, K)
-#elif CP_RSA == QUICK
-#define cp_rsa_sig(O, OL, I, IL, H, K)	cp_rsa_sig_quick(O, OL, I, IL, H, K)
-#endif
-
 /*============================================================================*/
 /* Function prototypes                                                        */
 /*============================================================================*/
 
 /**
- * Generates a key pair for the basic RSA algorithm.
+ * Generates a key pair for the RSA cryptosystem. Generates additional values
+ * for the CRT optimization if CP_CRT is on.
  *
  * @param[out] pub			- the public key.
  * @param[out] prv			- the private key.
  * @param[in] bits			- the key length in bits.
  * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
  */
-int cp_rsa_gen_basic(rsa_t pub, rsa_t prv, int bits);
-
-/**
- * Generates a key pair for fast RSA operations with the CRT optimization.
- *
- * @param[out] pub			- the public key.
- * @param[out] prv			- the private key.
- * @param[in] bits			- the key length in bits.
- * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
- */
-int cp_rsa_gen_quick(rsa_t pub, rsa_t prv, int bits);
+int cp_rsa_gen(rsa_t pub, rsa_t prv, int bits);
 
 /**
  * Encrypts using the RSA cryptosystem.
@@ -673,7 +645,8 @@ int cp_rsa_gen_quick(rsa_t pub, rsa_t prv, int bits);
 int cp_rsa_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len, rsa_t pub);
 
 /**
- * Decrypts using the basic RSA decryption method.
+ * Decrypts using the RSA cryptosystem. Uses the CRT optimization if
+ * CP_CRT is on.
  *
  * @param[out] out			- the output buffer.
  * @param[in, out] out_len	- the buffer capacity and number of bytes written.
@@ -682,25 +655,13 @@ int cp_rsa_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len, rsa_t pub);
  * @param[in] prv			- the private key.
  * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
  */
-int cp_rsa_dec_basic(uint8_t *out, int *out_len, uint8_t *in, int in_len,
-		rsa_t prv);
-
-/**
- * Decrypts using the fast RSA decryption with CRT optimization.
- *
- * @param[out] out			- the output buffer.
- * @param[in, out] out_len	- the buffer capacity and number of bytes written.
- * @param[in] in			- the input buffer.
- * @param[in] in_len		- the number of bytes to decrypt.
- * @param[in] prv			- the private key.
- * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
- */
-int cp_rsa_dec_quick(uint8_t *out, int *out_len, uint8_t *in, int in_len,
+int cp_rsa_dec(uint8_t *out, int *out_len, uint8_t *in, int in_len,
 		rsa_t prv);
 
 /**
  * Signs using the basic RSA signature algorithm. The flag must be non-zero if
- * the message being signed is already a hash value.
+ * the message being signed is already a hash value. Uses the CRT optimization
+ * if CP_CRT is on.
  *
  * @param[out] sig			- the signature
  * @param[out] sig_len		- the number of bytes written in the signature.
@@ -710,22 +671,7 @@ int cp_rsa_dec_quick(uint8_t *out, int *out_len, uint8_t *in, int in_len,
  * @param[in] prv			- the private key.
  * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
  */
-int cp_rsa_sig_basic(uint8_t *sig, int *sig_len, uint8_t *msg, int msg_len,
-		int hash, rsa_t prv);
-
-/**
- * Signs using the fast RSA signature algorithm with CRT optimization. The flag
- * must be non-zero if the message being signed is already a hash value.
- *
- * @param[out] sig			- the signature
- * @param[out] sig_len		- the number of bytes written in the signature.
- * @param[in] msg			- the message to sign.
- * @param[in] msg_len		- the number of bytes to sign.
- * @param[in] hash			- the flag to indicate the message format.
- * @param[in] prv			- the private key.
- * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
- */
-int cp_rsa_sig_quick(uint8_t *sig, int *sig_len, uint8_t *msg, int msg_len,
+int cp_rsa_sig(uint8_t *sig, int *sig_len, uint8_t *msg, int msg_len,
 		int hash, rsa_t prv);
 
 /**
@@ -815,39 +761,64 @@ int cp_bdpe_dec(dig_t *out, uint8_t *in, int in_len, bdpe_t prv);
 /**
  * Generates a key pair for Paillier's Homomorphic Probabilistic Encryption.
  *
- * @param[out] n			- the public key.
- * @param[out] l			- the private key.
+ * @param[out] pub			- the public key.
+ * @param[out] prv			- the private key.
  * @param[in] bits			- the key length in bits.
  * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
  */
-int cp_phpe_gen(bn_t n, bn_t l, int bits);
+int cp_phpe_gen(bn_t pub, phpe_t prv, int bits);
 
 /**
  * Encrypts using the Paillier cryptosystem.
  *
- * @param[out] out			- the output buffer.
- * @param[in, out] out_len	- the buffer capacity and number of bytes written.
- * @param[in] in			- the input buffer.
- * @param[in] in_len		- the number of bytes to encrypt.
- * @param[in] n				- the public key.
+ * @param[out] c			- the ciphertex, represented as an integer.
+ * @param[in] m				- the plaintext as an integer.
+ * @param[in] pub			- the public key.
  * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
  */
-int cp_phpe_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len, bn_t n);
+int cp_phpe_enc(bn_t c, bn_t m, bn_t pub);
 
 /**
- * Decrypts using the Paillier cryptosystem. Since this system is homomorphic,
- * no padding can be applied and the user is responsible for specifying the
- * resulting plaintext size.
+ * Decrypts using the Paillier cryptosystem.
  *
- * @param[out] out			- the output buffer.
- * @param[out] out_len		- the number of bytes to write in the output buffer.
- * @param[in] in_len		- the number of bytes to decrypt.
- * @param[in] n				- the public key.
- * @param[in] l				- the private key.
+ * @param[out] m			- the plaintext, represented as an integer.
+ * @param[in] c				- the ciphertex as an integer.
+ * @param[in] prv			- the private key.
  * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
  */
-int cp_phpe_dec(uint8_t *out, int out_len, uint8_t *in, int in_len, bn_t n,
-		bn_t l);
+int cp_phpe_dec(bn_t m, bn_t c, phpe_t prv);
+
+/**
+ * Generates a key pair for Genealized Homomorphic Probabilistic Encryption.
+ *
+ * @param[out] pub			- the public key.
+ * @param[out] prv			- the private key.
+ * @param[in] bits			- the key length in bits.
+ * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
+ */
+int cp_ghpe_gen(bn_t pub, bn_t prv, int bits);
+
+/**
+ * Encrypts using the Generalized Paillier cryptosystem.
+ *
+ * @param[out] c			- the ciphertext.
+ * @param[in] m				- the plaintext.
+ * @param[in] pub			- the public key.
+ * @param[in] s 			- the block length parameter.
+ * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
+ */
+int cp_ghpe_enc(bn_t c, bn_t m, bn_t pub, int s);
+
+/**
+ * Decrypts using the Generalized Paillier cryptosystem.
+ *
+ * @param[out] m			- the plaintext.
+ * @param[in] c				- the ciphertext.
+ * @param[in] pub			- the public key.
+ * @param[in] s 			- the block length parameter.
+ * @return RLC_OK if no errors occurred, RLC_ERR otherwise.
+ */
+int cp_ghpe_dec(bn_t m, bn_t c, bn_t pub, bn_t prv, int s);
 
 /**
  * Generates an ECDH key pair.

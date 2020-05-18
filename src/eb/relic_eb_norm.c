@@ -45,11 +45,11 @@
  *
  * @param[out] r		- the result.
  * @param[in] p			- the point to normalize.
- * @param[in] inverted	- if the Z coordinate is already inverted.
+ * @param inv			- the flag to indicate if z is already inverted.
  */
-static void eb_norm_imp(eb_t r, const eb_t p, int inverted) {
-	if (!p->norm) {
-		if (inverted) {
+static void eb_norm_imp(eb_t r, const eb_t p, int inv) {
+	if (p->coord != BASIC) {
+		if (inv) {
 			fb_copy(r->z, p->z);
 		} else {
 			fb_inv(r->z, p->z);
@@ -60,7 +60,7 @@ static void eb_norm_imp(eb_t r, const eb_t p, int inverted) {
 		fb_set_dig(r->z, 1);
 	}
 
-	r->norm = 1;
+	r->coord = BASIC;
 }
 
 #endif /* EB_ADD == PROJC */
@@ -75,7 +75,7 @@ static void eb_norm_hlv(eb_t r, const eb_t p) {
 	fb_add(r->y, p->x, p->y);
 	fb_mul(r->y, r->y, p->x);
 	fb_copy(r->x, p->x);
-	r->norm = 1;
+	r->coord = BASIC;
 }
 
 /*============================================================================*/
@@ -88,13 +88,13 @@ void eb_norm(eb_t r, const eb_t p) {
 		return;
 	}
 
-	if (p->norm == 1) {
+	if (p->coord == BASIC) {
 		/* If the point is represented in affine coordinates, just copy it. */
 		eb_copy(r, p);
 		return;
 	}
 
-	if (p->norm == 2) {
+	if (p->coord == HALVE) {
 		eb_norm_hlv(r, p);
 		return;
 	}

@@ -43,10 +43,6 @@
 #include <android/log.h>
 #endif
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
-
 /*============================================================================*/
 /* Private definitions                                                        */
 /*============================================================================*/
@@ -139,46 +135,7 @@ char util_conv_char(dig_t i) {
 }
 
 int util_bits_dig(dig_t a) {
-#if WSIZE == 8 || WSIZE == 16
-	static const uint8_t table[16] = {
-		0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
-	};
-#endif
-#if WSIZE == 8
-	if (a >> 4 == 0) {
-		return table[a & 0xF];
-	} else {
-		return table[a >> 4] + 4;
-	}
-	return 0;
-#elif WSIZE == 16
-	int offset;
-
-	if (a >= ((dig_t)1 << 8)) {
-		offset = 8;
-	} else {
-		offset = 0;
-	}
-	a = a >> offset;
-	if (a >> 4 == 0) {
-		return table[a & 0xF] + offset;
-	} else {
-		return table[a >> 4] + 4 + offset;
-	}
-	return 0;
-#elif WSIZE == 32
-#ifdef _MSC_VER
-    return RLC_DIG - __lzcnt(a);
-#else
-	return RLC_DIG - __builtin_clz(a);
-#endif
-#elif WSIZE == 64
-#ifdef _MSC_VER
-    return RLC_DIG - __lzcnt64(a);
-#else
-	return RLC_DIG - __builtin_clzll(a);
-#endif
-#endif
+    return RLC_DIG - arch_lzcnt(a);
 }
 
 int util_cmp_const(const void *a, const void *b, int size) {

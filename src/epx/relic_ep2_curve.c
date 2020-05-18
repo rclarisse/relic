@@ -595,28 +595,30 @@ void ep2_curve_init(void) {
 
 void ep2_curve_clean(void) {
 	ctx_t *ctx = core_get();
+	if (ctx != NULL) {
 #ifdef EP_PRECO
-	for (int i = 0; i < RLC_EP_TABLE; i++) {
-		fp2_free(ctx->ep2_pre[i].x);
-		fp2_free(ctx->ep2_pre[i].y);
-		fp2_free(ctx->ep2_pre[i].z);
-	}
+		for (int i = 0; i < RLC_EP_TABLE; i++) {
+			fp2_free(ctx->ep2_pre[i].x);
+			fp2_free(ctx->ep2_pre[i].y);
+			fp2_free(ctx->ep2_pre[i].z);
+		}
 #endif
-	bn_clean(&(ctx->ep2_r));
-	bn_clean(&(ctx->ep2_h));
+		bn_clean(&(ctx->ep2_r));
+		bn_clean(&(ctx->ep2_h));
 
 #ifdef EP_CTMAP
-	iso2_t iso = ep2_curve_get_iso();
-	(void)iso; /* suppress unused warning when ALLOC == AUTO */
-	fp2_free(iso->a);
-	fp2_free(iso->b);
-	for (unsigned i = 0; i < RLC_EPX_CTMAP_MAX; ++i) {
-		fp2_free(iso->xn[i]);
-		fp2_free(iso->xd[i]);
-		fp2_free(iso->yn[i]);
-		fp2_free(iso->yd[i]);
-	}
+		iso2_t iso = ep2_curve_get_iso();
+		(void)iso; /* suppress unused warning when ALLOC == AUTO */
+		fp2_free(iso->a);
+		fp2_free(iso->b);
+		for (unsigned i = 0; i < RLC_EPX_CTMAP_MAX; ++i) {
+			fp2_free(iso->xn[i]);
+			fp2_free(iso->xd[i]);
+			fp2_free(iso->yn[i]);
+			fp2_free(iso->yd[i]);
+		}
 #endif
+	}
 }
 
 int ep2_curve_opt_a(void) {
@@ -818,7 +820,7 @@ void ep2_curve_set_twist(int type) {
 
 		fp2_zero(g->z);
 		fp_set_dig(g->z[0], 1);
-		g->norm = 1;
+		g->coord = BASIC;
 
 		ep2_copy(ctx->ep2_g, g);
 		fp2_copy(ctx->ep2_a, a);

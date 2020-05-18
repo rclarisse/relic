@@ -61,36 +61,6 @@ static int rsa(void) {
 			TEST_ASSERT(memcmp(in, out, ol) == 0, end);
 		} TEST_END;
 
-#if CP_RSA == BASIC || !defined(STRIP)
-		result = cp_rsa_gen_basic(pub, prv, RLC_BN_BITS);
-
-		TEST_BEGIN("basic rsa encryption/decryption is correct") {
-			TEST_ASSERT(result == RLC_OK, end);
-			il = 10;
-			ol = RLC_BN_BITS / 8 + 1;
-			rand_bytes(in, il);
-			TEST_ASSERT(cp_rsa_enc(out, &ol, in, il, pub) == RLC_OK, end);
-			TEST_ASSERT(cp_rsa_dec_basic(out, &ol, out, ol, prv) == RLC_OK,
-					end);
-			TEST_ASSERT(memcmp(in, out, ol) == 0, end);
-		} TEST_END;
-#endif
-
-#if CP_RSA == QUICK || !defined(STRIP)
-		result = cp_rsa_gen_quick(pub, prv, RLC_BN_BITS);
-
-		TEST_BEGIN("fast rsa encryption/decryption is correct") {
-			TEST_ASSERT(result == RLC_OK, end);
-			il = 10;
-			ol = RLC_BN_BITS / 8 + 1;
-			rand_bytes(in, il);
-			TEST_ASSERT(cp_rsa_enc(out, &ol, in, il, pub) == RLC_OK, end);
-			TEST_ASSERT(cp_rsa_dec_quick(out, &ol, out, ol, prv) == RLC_OK,
-					end);
-			TEST_ASSERT(memcmp(in, out, ol) == 0, end);
-		} TEST_END;
-#endif
-
 		result = cp_rsa_gen(pub, prv, RLC_BN_BITS);
 
 		TEST_BEGIN("rsa signature/verification is correct") {
@@ -104,42 +74,6 @@ static int rsa(void) {
 			TEST_ASSERT(cp_rsa_sig(out, &ol, h, RLC_MD_LEN, 1, prv) == RLC_OK, end);
 			TEST_ASSERT(cp_rsa_ver(out, ol, h, RLC_MD_LEN, 1, pub) == 1, end);
 		} TEST_END;
-
-#if CP_RSA == BASIC || !defined(STRIP)
-		result = cp_rsa_gen_basic(pub, prv, RLC_BN_BITS);
-
-		TEST_BEGIN("basic rsa signature/verification is correct") {
-			TEST_ASSERT(result == RLC_OK, end);
-			il = 10;
-			ol = RLC_BN_BITS / 8 + 1;
-			rand_bytes(in, il);
-			TEST_ASSERT(cp_rsa_sig_basic(out, &ol, in, il, 0, prv) == RLC_OK,
-					end);
-			TEST_ASSERT(cp_rsa_ver(out, ol, in, il, 0, pub) == 1, end);
-			md_map(h, in, il);
-			TEST_ASSERT(cp_rsa_sig_basic(out, &ol, h, RLC_MD_LEN, 1, prv) == RLC_OK,
-					end);
-			TEST_ASSERT(cp_rsa_ver(out, ol, h, RLC_MD_LEN, 1, pub) == 1, end);
-		} TEST_END;
-#endif
-
-#if CP_RSA == QUICK || !defined(STRIP)
-		result = cp_rsa_gen_quick(pub, prv, RLC_BN_BITS);
-
-		TEST_BEGIN("fast rsa signature/verification is correct") {
-			TEST_ASSERT(result == RLC_OK, end);
-			il = 10;
-			ol = RLC_BN_BITS / 8 + 1;
-			rand_bytes(in, il);
-			TEST_ASSERT(cp_rsa_sig_quick(out, &ol, in, il, 0, prv) == RLC_OK,
-					end);
-			TEST_ASSERT(cp_rsa_ver(out, ol, in, il, 0, pub) == 1, end);
-			md_map(h, in, il);
-			TEST_ASSERT(cp_rsa_sig_quick(out, &ol, h, RLC_MD_LEN, 1, prv) == RLC_OK,
-					end);
-			TEST_ASSERT(cp_rsa_ver(out, ol, h, RLC_MD_LEN, 1, pub) == 1, end);
-		} TEST_END;
-#endif
 	} CATCH_ANY {
 		ERROR(end);
 	}
@@ -256,73 +190,89 @@ static int benaloh(void) {
 
 static int paillier(void) {
 	int code = RLC_ERR;
-	bn_t a, b, c, d, n, l, s;
-	uint8_t in[RLC_BN_BITS / 8 + 1], out[RLC_BN_BITS / 8 + 1];
-	int in_len, out_len;
+	bn_t a, b, c, d, s, pub;
+	phpe_t prv;
 	int result;
 
 	bn_null(a);
 	bn_null(b);
 	bn_null(c);
 	bn_null(d);
-	bn_null(n);
-	bn_null(l);
 	bn_null(s);
+	bn_null(pub);
+	phpe_null(prv);
 
 	TRY {
 		bn_new(a);
 		bn_new(b);
 		bn_new(c);
 		bn_new(d);
-		bn_new(n);
-		bn_new(l);
 		bn_new(s);
+		bn_new(pub);
+		phpe_new(prv);
 
-		result = cp_phpe_gen(n, l, RLC_BN_BITS / 2);
+		result = cp_phpe_gen(pub, prv, RLC_BN_BITS / 2);
 
 		TEST_BEGIN("paillier encryption/decryption is correct") {
 			TEST_ASSERT(result == RLC_OK, end);
-			in_len = bn_size_bin(n);
-			out_len = RLC_BN_BITS / 8 + 1;
-			memset(in, 0, sizeof(in));
-			rand_bytes(in + (in_len - 10), 10);
-			TEST_ASSERT(cp_phpe_enc(out, &out_len, in, in_len, n) == RLC_OK,
-					end);
-			TEST_ASSERT(cp_phpe_dec(out, in_len, out, out_len, n, l) == RLC_OK,
-					end);
-			TEST_ASSERT(memcmp(in, out, in_len) == 0, end);
+			bn_rand_mod(a, pub);
+			TEST_ASSERT(cp_phpe_enc(c, a, pub) == RLC_OK, end);
+			TEST_ASSERT(cp_phpe_dec(b, c, prv) == RLC_OK, end);
+			TEST_ASSERT(bn_cmp(a, b) == RLC_EQ, end);
 		}
 		TEST_END;
 
 		TEST_BEGIN("paillier encryption/decryption is homomorphic") {
 			TEST_ASSERT(result == RLC_OK, end);
-			in_len = bn_size_bin(n);
-			out_len = RLC_BN_BITS / 8 + 1;
-			memset(in, 0, sizeof(in));
-			rand_bytes(in + (in_len - 10), 10);
-			bn_read_bin(a, in, in_len);
-			TEST_ASSERT(cp_phpe_enc(out, &out_len, in, in_len, n) == RLC_OK,
-					end);
-			bn_read_bin(b, out, out_len);
-			memset(in, 0, sizeof(in));
-			rand_bytes(in + (in_len - 10), 10);
-			bn_read_bin(c, in, in_len);
-			out_len = RLC_BN_BITS / 8 + 1;
-			TEST_ASSERT(cp_phpe_enc(out, &out_len, in, in_len, n) == RLC_OK,
-					end);
-			bn_read_bin(d, out, out_len);
-			bn_mul(b, b, d);
-			bn_sqr(s, n);
-			bn_mod(b, b, s);
-			bn_write_bin(out, out_len, b);
-			TEST_ASSERT(cp_phpe_dec(out, in_len, out, out_len, n, l) == RLC_OK,
-					end);
-			bn_add(a, a, c);
-			bn_write_bin(in, in_len, a);
-			bn_read_bin(a, out, in_len);
-			TEST_ASSERT(memcmp(in, out, in_len) == 0, end);
+			bn_rand_mod(a, pub);
+			bn_rand_mod(b, pub);
+			TEST_ASSERT(cp_phpe_enc(c, a, pub) == RLC_OK, end);
+			TEST_ASSERT(cp_phpe_enc(d, b, pub) == RLC_OK, end);
+			bn_mul(c, c, d);
+			bn_sqr(d, pub);
+			bn_mod(c, c, d);
+			TEST_ASSERT(cp_phpe_dec(d, c, prv) == RLC_OK, end);
+			bn_add(a, a, b);
+			bn_mod(a, a, pub);
+			TEST_ASSERT(bn_cmp(a, d) == RLC_EQ, end);
 		}
 		TEST_END;
+
+		for (int k = 1; k <= 2; k++) {
+			result = cp_ghpe_gen(pub, s, RLC_BN_BITS / (2 * k));
+			util_print("(s = %d) ", k);
+			TEST_BEGIN("generalized paillier encryption/decryption is correct") {
+				TEST_ASSERT(result == RLC_OK, end);
+				bn_rand(a, RLC_POS, k * (bn_bits(pub) - 1));
+				TEST_ASSERT(cp_ghpe_enc(c, a, pub, k) == RLC_OK, end);
+				TEST_ASSERT(cp_ghpe_dec(b, c, pub, s, k) == RLC_OK, end);
+				TEST_ASSERT(bn_cmp(a, b) == RLC_EQ, end);
+			}  TEST_END;
+
+			util_print("(s = %d) ", k);
+			TEST_BEGIN("generalized paillier encryption/decryption is homomorphic") {
+				TEST_ASSERT(result == RLC_OK, end);
+				bn_rand(a, RLC_POS, k * (bn_bits(pub) - 1));
+				bn_rand(b, RLC_POS, k * (bn_bits(pub) - 1));
+				TEST_ASSERT(cp_ghpe_enc(c, a, pub, k) == RLC_OK, end);
+				TEST_ASSERT(cp_ghpe_enc(d, b, pub, k) == RLC_OK, end);
+				bn_mul(c, c, d);
+				bn_sqr(d, pub);
+				if (k == 2) {
+					bn_mul(d, d, pub);
+				}
+				bn_mod(c, c, d);
+				TEST_ASSERT(cp_ghpe_dec(c, c, pub, s, k) == RLC_OK, end);
+				bn_add(a, a, b);
+				bn_copy(d, pub);
+				if (k == 2) {
+					bn_mul(d, d, pub);
+				}
+				bn_mod(a, a, d);
+				TEST_ASSERT(bn_cmp(a, c) == RLC_EQ, end);
+			}
+			TEST_END;
+		}
 	}
 	CATCH_ANY {
 		ERROR(end);
@@ -334,9 +284,9 @@ static int paillier(void) {
 	bn_free(b);
 	bn_free(c);
 	bn_free(d);
-	bn_free(n);
-	bn_free(l);
 	bn_free(s);
+	bn_free(pub);
+	phpe_free(prv);
 	return code;
 }
 
@@ -377,7 +327,7 @@ uint8_t result[] = {
 	RLC_GET(str, CURVE##_B_Y, sizeof(CURVE##_B_Y));							\
 	fp_read_str(q_b->y, str, strlen(str), 16);								\
 	fp_set_dig(q_b->z, 1);													\
-	qa->norm = q_b->norm = 1;												\
+	qa->coord = q_b->coord = BASIC;											\
 
 #define ASSIGNK(CURVE)														\
 	RLC_GET(str, CURVE##_A, sizeof(CURVE##_A));								\
@@ -394,7 +344,7 @@ uint8_t result[] = {
 	RLC_GET(str, CURVE##_B_Y, sizeof(CURVE##_B_Y));							\
 	fb_read_str(q_b->y, str, strlen(str), 16);								\
 	fb_set_dig(q_b->z, 1);													\
-	qa->norm = q_b->norm = 1;												\
+	qa->coord = q_b->coord = BASIC;											\
 
 static int ecdh(void) {
 	int code = RLC_ERR;
@@ -687,7 +637,7 @@ static int vbnn(void) {
 		ec_new(pka);
 		ec_new(pkb);
 
-		TEST_BEGIN("vbnn is correct") {
+		TEST_BEGIN("vbnn signature is correct") {
 			TEST_ASSERT(cp_vbnn_gen(msk, mpk) == RLC_OK, end);
 			TEST_ASSERT(cp_vbnn_gen_prv(ska, pka, msk, ida, sizeof(ida)) == RLC_OK, end);
 			TEST_ASSERT(cp_vbnn_gen_prv(skb, pkb, msk, idb, sizeof(idb)) == RLC_OK, end);
@@ -1113,10 +1063,6 @@ static int pss(void) {
 	g2_null(g);
 	g2_null(x);
 	g2_null(y);
-	for (i = 0; i < 5; i++) {
-		bn_null(_v[i]);
-		g2_null(_y[i]);
-	}
 
 	TRY {
 		bn_new(u);
@@ -1127,6 +1073,8 @@ static int pss(void) {
 		g2_new(x);
 		g2_new(y);
 		for (i = 0; i < 5; i++) {
+			bn_null(_v[i]);
+			g2_null(_y[i]);
 			bn_new(_v[i]);
 			g2_new(_y[i]);
 		}

@@ -53,7 +53,7 @@ void eb_frb_basic(eb_t r, const eb_t p) {
 	fb_zero(r->z);
 	fb_set_bit(r->z, 0, 1);
 
-	r->norm = 1;
+	r->coord = BASIC;
 }
 
 #endif
@@ -68,13 +68,13 @@ void eb_frb_projc(eb_t r, const eb_t p) {
 
 	fb_sqr(r->x, p->x);
 	fb_sqr(r->y, p->y);
-	if (!p->norm) {
+	if (p->coord != BASIC) {
 		fb_sqr(r->z, p->z);
 	} else {
 		fb_set_dig(r->z, 1);
 	}
 
-	r->norm = p->norm;
+	r->coord = p->coord;
 }
 
 #endif
